@@ -9,12 +9,9 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Skip type checking and linting during build (we do this in CI)
+  // Skip type checking during build
   typescript: {
     ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
   },
 };
 
