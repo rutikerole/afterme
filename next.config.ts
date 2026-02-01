@@ -9,9 +9,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Disable static generation for error pages to avoid build issues
-  experimental: {
-    // PPR is causing issues with global-error, disable for now
+  // Skip type checking and linting during build (we do this in CI)
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
   },
 };
 

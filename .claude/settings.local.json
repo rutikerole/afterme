@@ -20,7 +20,13 @@
       "Bash(npx dotenv:*)",
       "Bash(npx cross-env:*)",
       "Bash(del c:UsersrutikDesktopafterMeappglobal-error.tsx)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Complete AfterMe production-ready application\n\n- Full authentication system with session management\n- PostgreSQL database with Prisma ORM (18+ models)\n- Complete API routes for all features\n- Dashboard with voice messages, memories, stories, vault\n- Family member management with access control\n- Beautiful UI with Tailwind CSS and animations\n- Loading states, empty states, error handling\n- Mobile responsive design\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(gh auth status:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
