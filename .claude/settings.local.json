@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(dir /s /b c:UsersrutikDesktopafterMeapp)",
+      "Bash(dir /s /b c:UsersrutikDesktopafterMecomponents)",
+      "Bash(dir /s /b c:UsersrutikDesktopafterMelib)",
+      "Bash(grep:*)",
+      "Bash(npx prisma init:*)",
+      "Bash(npx prisma generate)",
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(node -e:*)",
+      "Bash(set DATABASE_URL=postgresql://neondb_owner:npg_iudY9oF7HfTG@ep-flat-shape-a1cau2do-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require)",
+      "Bash($env:DATABASE_URL=\"postgresql://neondb_owner:npg_iudY9oF7HfTG@ep-flat-shape-a1cau2do-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require\")",
+      "Bash(npx dotenv:*)",
+      "Bash(npx cross-env:*)",
+      "Bash(del c:UsersrutikDesktopafterMeappglobal-error.tsx)",
+      "Bash(git add:*)"
+    ]
+  }
+}

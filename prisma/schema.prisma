@@ -1,0 +1,622 @@
+// ════════════════════════════════════════════════════════════════════════════
+// AFTERME - PRISMA SCHEMA
+// A digital legacy platform for preserving memories and important information
+// ════════════════════════════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// USER & AUTHENTICATION
+// ════════════════════════════════════════════════════════════════════════════
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  name          String
+  avatar        String?
+  phone         String?
+  dateOfBirth   DateTime?
+
+  // Profile settings
+  bio           String?
+  location      String?
+  timezone      String    @default("UTC")
+
+  // Account status
+  emailVerified Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  lastLoginAt   DateTime?
+
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  familyMembers   FamilyMember[]
+  voiceMessages   VoiceMessage[]
+  memories        Memory[]
+  stories         Story[]
+  vaultItems      VaultItem[]
+  legacyInstructions LegacyInstruction[]
+  activities      Activity[]
+  achievements    UserAchievement[]
+  sessions        Session[]
+
+  // Settings
+  settings        UserSettings?
+
+  @@index([email])
+  @@map("users")
+}
+
+model UserSettings {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Notification preferences
+  emailNotifications    Boolean  @default(true)
+  reminderFrequency     String   @default("weekly") // daily, weekly, monthly
+
+  // Privacy settings
+  profileVisibility     String   @default("private") // private, family, public
+
+  // Legacy settings
+  inactivityPeriod      Int      @default(365) // days before triggering legacy release
+  legacyReleaseEnabled  Boolean  @default(false)
+
+  // App preferences
+  theme                 String   @default("light") // light, dark, system
+  language              String   @default("en")
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("user_settings")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  token        String   @unique
+  expiresAt    DateTime
+  userAgent    String?
+  ipAddress    String?
+
+  createdAt    DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+  @@map("sessions")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// FAMILY & TRUSTED CIRCLE
+// ════════════════════════════════════════════════════════════════════════════
+
+model FamilyMember {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name            String
+  relationship    String    // spouse, child, parent, sibling, friend, etc.
+  email           String?
+  phone           String?
+  avatar          String?
+
+  // Access control
+  accessLevel     String    @default("viewer") // viewer, editor, executor
+  canAccessVoice  Boolean   @default(true)
+  canAccessMemories Boolean @default(true)
+  canAccessStories Boolean  @default(true)
+  canAccessVault  Boolean   @default(false)
+  canAccessLegacy Boolean   @default(false)
+
+  // Invitation status
+  isInvited       Boolean   @default(false)
+  invitedAt       DateTime?
+  acceptedAt      DateTime?
+
+  // Notes
+  notes           String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  nomineeFor      Nominee[]
+  emergencyContact EmergencyContact?
+
+  @@index([userId])
+  @@map("family_members")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// VOICE MESSAGES
+// ════════════════════════════════════════════════════════════════════════════
+
+model VoiceMessage {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title           String
+  description     String?
+
+  // Audio file
+  fileUrl         String
+  fileSize        Int       // in bytes
+  duration        Int       // in seconds
+  mimeType        String    @default("audio/webm")
+
+  // Transcription
+  transcript      String?
+  isTranscribed   Boolean   @default(false)
+
+  // Metadata
+  recordedAt      DateTime  @default(now())
+  tags            String[]
+
+  // Privacy
+  isPrivate       Boolean   @default(false)
+  releaseAfterDeath Boolean @default(true)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([recordedAt])
+  @@map("voice_messages")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// MEMORIES (PHOTOS & MOMENTS)
+// ════════════════════════════════════════════════════════════════════════════
+
+model Memory {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title           String
+  description     String?
+
+  // Media
+  mediaType       String    @default("image") // image, video
+  mediaUrl        String
+  thumbnailUrl    String?
+  fileSize        Int?
+
+  // Metadata
+  dateTaken       DateTime?
+  location        String?
+  tags            String[]
+  people          String[]  // Names of people in the memory
+
+  // Organization
+  albumId         String?
+  album           Album?    @relation(fields: [albumId], references: [id])
+
+  // Privacy
+  isPrivate       Boolean   @default(false)
+  isFavorite      Boolean   @default(false)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([dateTaken])
+  @@index([albumId])
+  @@map("memories")
+}
+
+model Album {
+  id              String    @id @default(cuid())
+  userId          String
+
+  name            String
+  description     String?
+  coverImageUrl   String?
+
+  memories        Memory[]
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("albums")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// STORIES & LIFE NARRATIVES
+// ════════════════════════════════════════════════════════════════════════════
+
+model Story {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title           String
+  content         String    // Rich text content (HTML or Markdown)
+  excerpt         String?   // Short preview
+
+  // Categorization
+  category        String    @default("life") // life, wisdom, memories, advice, traditions
+  tags            String[]
+
+  // Media
+  coverImageUrl   String?
+
+  // Status
+  status          String    @default("draft") // draft, published, archived
+  publishedAt     DateTime?
+
+  // Engagement
+  wordCount       Int       @default(0)
+  readTime        Int       @default(0) // in minutes
+
+  // Privacy
+  isPrivate       Boolean   @default(false)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([category])
+  @@map("stories")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// VAULT - SECURE DOCUMENT STORAGE
+// ════════════════════════════════════════════════════════════════════════════
+
+model VaultItem {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Common fields
+  name            String
+  description     String?
+  category        String    // finance, identity, insurance, subscription, property, other
+
+  // Encrypted data (JSON string with sensitive info)
+  encryptedData   String?
+
+  // File attachment
+  fileUrl         String?
+  fileName        String?
+  fileSize        Int?
+
+  // Metadata
+  tags            String[]
+  importance      String    @default("normal") // low, normal, high, critical
+
+  // Dates
+  expiryDate      DateTime?
+  reminderDate    DateTime?
+
+  // Status
+  isArchived      Boolean   @default(false)
+  lastAccessedAt  DateTime?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Specific vault item types (one-to-one relations)
+  financeItem     FinanceItem?
+  identityDoc     IdentityDocument?
+  insurancePolicy InsurancePolicy?
+  subscription    Subscription?
+  property        Property?
+
+  @@index([userId])
+  @@index([category])
+  @@map("vault_items")
+}
+
+model FinanceItem {
+  id              String    @id @default(cuid())
+  vaultItemId     String    @unique
+  vaultItem       VaultItem @relation(fields: [vaultItemId], references: [id], onDelete: Cascade)
+
+  type            String    // bank_account, credit_card, investment, loan, crypto, other
+  institutionName String
+  accountNumber   String?   // Last 4 digits only for display
+
+  // Amounts (stored encrypted in VaultItem.encryptedData)
+  currency        String    @default("USD")
+
+  // Contact
+  contactPhone    String?
+  contactEmail    String?
+  website         String?
+
+  // Nominees
+  nominees        Nominee[]
+
+  @@map("finance_items")
+}
+
+model IdentityDocument {
+  id              String    @id @default(cuid())
+  vaultItemId     String    @unique
+  vaultItem       VaultItem @relation(fields: [vaultItemId], references: [id], onDelete: Cascade)
+
+  type            String    // passport, drivers_license, national_id, birth_certificate, ssn, other
+  documentNumber  String?   // Partially masked
+  issuingCountry  String?
+  issuingAuthority String?
+
+  issueDate       DateTime?
+  expiryDate      DateTime?
+
+  @@map("identity_documents")
+}
+
+model InsurancePolicy {
+  id              String    @id @default(cuid())
+  vaultItemId     String    @unique
+  vaultItem       VaultItem @relation(fields: [vaultItemId], references: [id], onDelete: Cascade)
+
+  type            String    // life, health, auto, home, travel, other
+  provider        String
+  policyNumber    String?
+
+  // Coverage
+  coverageAmount  Decimal?
+  premium         Decimal?
+  premiumFrequency String?  // monthly, quarterly, annually
+
+  // Dates
+  startDate       DateTime?
+  endDate         DateTime?
+
+  // Beneficiaries
+  nominees        Nominee[]
+
+  // Contact
+  agentName       String?
+  agentPhone      String?
+  agentEmail      String?
+
+  @@map("insurance_policies")
+}
+
+model Subscription {
+  id              String    @id @default(cuid())
+  vaultItemId     String    @unique
+  vaultItem       VaultItem @relation(fields: [vaultItemId], references: [id], onDelete: Cascade)
+
+  serviceName     String
+  category        String    // streaming, software, membership, utility, other
+
+  // Billing
+  amount          Decimal?
+  currency        String    @default("USD")
+  billingCycle    String?   // monthly, quarterly, annually
+  nextBillingDate DateTime?
+
+  // Account
+  accountEmail    String?
+  website         String?
+
+  // Cancellation
+  cancellationUrl String?
+  cancellationInstructions String?
+
+  isAutoRenew     Boolean   @default(true)
+
+  @@map("subscriptions")
+}
+
+model Property {
+  id              String    @id @default(cuid())
+  vaultItemId     String    @unique
+  vaultItem       VaultItem @relation(fields: [vaultItemId], references: [id], onDelete: Cascade)
+
+  type            String    // real_estate, vehicle, valuable, digital_asset, other
+
+  // Location/Identifier
+  address         String?
+  registrationNumber String?
+
+  // Value
+  estimatedValue  Decimal?
+  currency        String    @default("USD")
+  purchaseDate    DateTime?
+  purchasePrice   Decimal?
+
+  // Documentation
+  documentRefs    String[]
+
+  // Nominees
+  nominees        Nominee[]
+
+  @@map("properties")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// EMERGENCY & NOMINEES
+// ════════════════════════════════════════════════════════════════════════════
+
+model EmergencyContact {
+  id              String       @id @default(cuid())
+  familyMemberId  String       @unique
+  familyMember    FamilyMember @relation(fields: [familyMemberId], references: [id], onDelete: Cascade)
+
+  priority        Int          @default(1) // 1 = primary, 2 = secondary, etc.
+
+  // Medical info
+  medicalNotes    String?
+  bloodType       String?
+  allergies       String[]
+  medications     String[]
+
+  // Emergency instructions
+  instructions    String?
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@map("emergency_contacts")
+}
+
+model Nominee {
+  id              String        @id @default(cuid())
+  familyMemberId  String
+  familyMember    FamilyMember  @relation(fields: [familyMemberId], references: [id], onDelete: Cascade)
+
+  // What they're nominated for
+  financeItemId   String?
+  financeItem     FinanceItem?  @relation(fields: [financeItemId], references: [id])
+
+  insurancePolicyId String?
+  insurancePolicy InsurancePolicy? @relation(fields: [insurancePolicyId], references: [id])
+
+  propertyId      String?
+  property        Property?     @relation(fields: [propertyId], references: [id])
+
+  // Share/Percentage
+  sharePercentage Decimal?
+  notes           String?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("nominees")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// LEGACY INSTRUCTIONS
+// ════════════════════════════════════════════════════════════════════════════
+
+model LegacyInstruction {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title           String
+  content         String    // Rich text content
+
+  category        String    // funeral, digital_assets, messages, legal, personal, other
+
+  // Recipients
+  recipientEmails String[]
+
+  // Attachments
+  attachmentUrls  String[]
+
+  // Trigger conditions
+  triggerType     String    @default("death") // death, incapacity, custom_date
+  triggerDate     DateTime?
+
+  // Status
+  isCompleted     Boolean   @default(false)
+  completedAt     DateTime?
+
+  priority        Int       @default(0)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([category])
+  @@map("legacy_instructions")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ACTIVITY & GAMIFICATION
+// ════════════════════════════════════════════════════════════════════════════
+
+model Activity {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type            String    // voice_recorded, memory_added, story_written, vault_updated, etc.
+  description     String
+
+  // Reference to related entity
+  entityType      String?   // VoiceMessage, Memory, Story, etc.
+  entityId        String?
+
+  // Metadata
+  metadata        Json?
+
+  createdAt       DateTime  @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("activities")
+}
+
+model Achievement {
+  id              String    @id @default(cuid())
+
+  name            String    @unique
+  description     String
+  icon            String?
+
+  // Requirements
+  category        String    // voice, memories, stories, vault, family, streak
+  requirement     Int       // e.g., 10 voice messages
+
+  // Rewards
+  points          Int       @default(0)
+
+  users           UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id              String      @id @default(cuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  achievementId   String
+  achievement     Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  unlockedAt      DateTime    @default(now())
+
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// AUDIT LOG (for sensitive operations)
+// ════════════════════════════════════════════════════════════════════════════
+
+model AuditLog {
+  id              String    @id @default(cuid())
+  userId          String?
+
+  action          String    // login, logout, vault_access, export, delete, etc.
+  resource        String?   // What was accessed
+  resourceId      String?
+
+  ipAddress       String?
+  userAgent       String?
+
+  status          String    @default("success") // success, failure
+  details         Json?
+
+  createdAt       DateTime  @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
