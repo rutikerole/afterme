@@ -26,7 +26,9 @@
       "Bash(git remote add:*)",
       "Bash(git branch:*)",
       "Bash(git push:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(del \"c:\\Users\\rutik\\Desktop\\afterMe\\app\\global-error.tsx\")",
+      "Bash(npm view:*)"
     ]
   }
 }
