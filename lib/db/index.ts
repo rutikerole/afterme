@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 // PRISMA CLIENT - DATABASE CONNECTION
 // Singleton pattern to prevent multiple instances in development
-// Prisma 7+ requires adapter for "client" engine type
+// Lazy initialization to prevent build-time connection attempts
 // ════════════════════════════════════════════════════════════════════════════
 
 import { PrismaClient } from "@prisma/client";
@@ -15,7 +15,6 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient(): PrismaClient {
-  // Create a connection pool for PostgreSQL
   const connectionString = process.env.DATABASE_URL;
 
   if (!connectionString) {
@@ -39,11 +38,25 @@ function createPrismaClient(): PrismaClient {
   });
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+// Lazy getter for prisma client - only creates connection when first accessed
+function getPrismaClient(): PrismaClient {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = createPrismaClient();
+  }
+  return globalForPrisma.prisma;
 }
+
+// Export a proxy that lazily initializes the client
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_, prop) {
+    const client = getPrismaClient();
+    const value = client[prop as keyof PrismaClient];
+    if (typeof value === "function") {
+      return value.bind(client);
+    }
+    return value;
+  },
+});
 
 // Re-export for convenience
 export default prisma;
@@ -57,8 +70,9 @@ export default prisma;
  * Use this in cleanup operations
  */
 export async function disconnectDB() {
-  await prisma.$disconnect();
-  // Also close the connection pool
+  if (globalForPrisma.prisma) {
+    await globalForPrisma.prisma.$disconnect();
+  }
   if (globalForPrisma.pool) {
     await globalForPrisma.pool.end();
   }
@@ -69,7 +83,7 @@ export async function disconnectDB() {
  */
 export async function checkDBHealth(): Promise<boolean> {
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    await getPrismaClient().$queryRaw`SELECT 1`;
     return true;
   } catch {
     return false;
@@ -82,5 +96,5 @@ export async function checkDBHealth(): Promise<boolean> {
 export async function withTransaction<T>(
   fn: (tx: Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">) => Promise<T>
 ): Promise<T> {
-  return prisma.$transaction(fn);
+  return getPrismaClient().$transaction(fn);
 }
