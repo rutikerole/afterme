@@ -21,9 +21,12 @@ import {
   Eye,
   Zap,
   Leaf,
+  Loader2,
 } from "lucide-react";
+import { vaultApi, type VaultItem } from "@/lib/api";
+import { toast } from "sonner";
 
-const vaultSections = [
+const defaultVaultSections = [
   {
     id: "identity",
     label: "Identity Documents",
@@ -244,13 +247,56 @@ function FloatingLeaf({ className, delay = 0 }: { className?: string; delay?: nu
 
 export default function VaultPage() {
   const [mounted, setMounted] = useState(false);
-  const completedItems = vaultSections.reduce((acc, s) => acc + s.items, 0);
-  const totalItems = vaultSections.reduce((acc, s) => acc + s.total, 0);
-  const completionPercentage = Math.round((completedItems / totalItems) * 100);
+  const [isLoading, setIsLoading] = useState(true);
+  const [vaultItems, setVaultItems] = useState<VaultItem[]>([]);
+  const [vaultSections, setVaultSections] = useState(defaultVaultSections);
 
   useEffect(() => {
     setMounted(true);
+    fetchVaultItems();
   }, []);
+
+  const fetchVaultItems = async () => {
+    try {
+      setIsLoading(true);
+      const response = await vaultApi.getAll();
+      setVaultItems(response.items);
+
+      // Count items by category
+      const categoryCounts: Record<string, number> = {};
+      response.items.forEach((item: VaultItem) => {
+        const cat = item.category.toLowerCase();
+        categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+      });
+
+      // Update vault sections with real counts
+      const updatedSections = defaultVaultSections.map(section => {
+        const count = categoryCounts[section.id] || 0;
+        let status: "complete" | "incomplete" | "empty" = "empty";
+        if (count > 0 && count >= section.total) {
+          status = "complete";
+        } else if (count > 0) {
+          status = "incomplete";
+        }
+        return {
+          ...section,
+          items: count,
+          status,
+        };
+      });
+
+      setVaultSections(updatedSections);
+    } catch (error) {
+      console.error("Failed to fetch vault items:", error);
+      // Keep default sections on error
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const completedItems = vaultSections.reduce((acc, s) => acc + s.items, 0);
+  const totalItems = vaultSections.reduce((acc, s) => acc + s.total, 0);
+  const completionPercentage = Math.round((completedItems / totalItems) * 100);
 
   return (
     <motion.div

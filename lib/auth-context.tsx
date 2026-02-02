@@ -150,10 +150,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 // HOOK
 // =============================================================================
 
+// Default values for when context is not available (during SSR/build)
+const defaultAuthValue: AuthContextType = {
+  user: null,
+  isLoading: true,
+  isAuthenticated: false,
+  login: async () => ({ success: false, error: "Not available" }),
+  register: async () => ({ success: false, error: "Not available" }),
+  logout: async () => {},
+  refreshUser: async () => {},
+};
+
 export function useAuth() {
   const context = useContext(AuthContext);
+  // Return default values during SSR/build instead of throwing
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    return defaultAuthValue;
   }
   return context;
 }

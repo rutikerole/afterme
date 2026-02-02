@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",
   images: {
     remotePatterns: [
       {
@@ -8,6 +7,8 @@ const nextConfig = {
         hostname: "images.unsplash.com",
       },
     ],
+    // Allow data URLs for base64 images
+    unoptimized: true,
   },
   // Skip type checking during build
   typescript: {

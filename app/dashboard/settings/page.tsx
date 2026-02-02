@@ -20,8 +20,10 @@ import {
   Sun,
   ChevronRight,
   LogOut,
+  Loader2,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { toast } from "sonner";
 
 // Floating Leaf SVG
 const FloatingLeaf = ({ className, style, size = 30 }: { className?: string; style?: React.CSSProperties; size?: number }) => (
@@ -86,32 +88,71 @@ export default function SettingsPage() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsSaving(false);
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
+    try {
+      // API call to update profile
+      const response = await fetch("/api/auth/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ name, email }),
+      });
+
+      if (!response.ok) throw new Error("Failed to save");
+      toast.success("Settings saved successfully!");
+    } catch (error) {
+      toast.error("Failed to save settings");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handlePasswordChange = async () => {
     if (newPassword !== confirmPassword) {
-      alert("Passwords don't match");
+      toast.error("Passwords don't match");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
       return;
     }
     setIsSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsSaving(false);
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
+    try {
+      // API call to change password
+      const response = await fetch("/api/auth/password", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to change password");
+      }
+
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      toast.success("Password updated successfully!");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to change password");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
     if (deleteConfirmText !== "DELETE") return;
-    // Handle account deletion
-    logout();
+    try {
+      await fetch("/api/auth/account", {
+        method: "DELETE",
+        credentials: "include",
+      });
+      toast.success("Account deleted");
+      logout();
+    } catch (error) {
+      toast.error("Failed to delete account");
+    }
   };
 
   return (

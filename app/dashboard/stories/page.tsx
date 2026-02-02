@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen,
@@ -24,8 +24,12 @@ import {
   X,
   Feather,
   Quote,
+  Loader2,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { storiesApi, type Story as ApiStory } from "@/lib/api";
+import { toast } from "sonner";
 
 interface StoryPrompt {
   id: string;
@@ -37,6 +41,7 @@ interface StoryPrompt {
     type: "text" | "voice" | "video";
     content: string;
     createdAt: string;
+    storyId?: string;
   };
 }
 
@@ -221,39 +226,113 @@ const promptCategories = [
   },
 ];
 
-const completedStories: StoryPrompt[] = [
-  {
-    id: "1",
-    category: "love",
-    prompt: "How did you meet your partner?",
-    description: "Tell the story of how love found you",
-    isCompleted: true,
-    response: {
-      type: "voice",
-      content: "3:45",
-      createdAt: "2024-12-15",
-    },
-  },
-  {
-    id: "2",
-    category: "wisdom",
-    prompt: "Your biggest life lesson",
-    description: "What would you tell your younger self?",
-    isCompleted: true,
-    response: {
-      type: "text",
-      content: "Never postpone spending time with the people you love. Work will always be there, but moments with family are precious and fleeting...",
-      createdAt: "2024-12-10",
-    },
-  },
-];
-
 export default function StoriesPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [activePrompt, setActivePrompt] = useState<{ category: string; prompt: string } | null>(null);
   const [responseType, setResponseType] = useState<"text" | "voice" | "video">("text");
   const [textResponse, setTextResponse] = useState("");
   const [isRecording, setIsRecording] = useState(false);
+  const [completedStories, setCompletedStories] = useState<StoryPrompt[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Fetch stories on mount
+  useEffect(() => {
+    fetchStories();
+  }, []);
+
+  const fetchStories = async () => {
+    try {
+      setIsLoading(true);
+      const response = await storiesApi.getAll();
+
+      // Map API stories to StoryPrompt format
+      const mappedStories: StoryPrompt[] = response.stories.map((story: ApiStory) => ({
+        id: story.id,
+        category: story.category || "wisdom",
+        prompt: story.title,
+        description: story.excerpt || "",
+        isCompleted: true,
+        response: {
+          type: "text" as const,
+          content: story.content,
+          createdAt: story.createdAt,
+          storyId: story.id,
+        },
+      }));
+
+      setCompletedStories(mappedStories);
+    } catch (error) {
+      console.error("Failed to fetch stories:", error);
+      toast.error("Failed to load stories");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const saveStory = async () => {
+    if (!activePrompt || !textResponse.trim()) {
+      toast.error("Please write something before saving");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Map category to API category
+      const categoryMap: Record<string, "life" | "wisdom" | "memories" | "advice" | "traditions"> = {
+        love: "life",
+        childhood: "memories",
+        wisdom: "wisdom",
+        family: "life",
+        milestones: "advice",
+        gratitude: "life",
+      };
+
+      const newStory = await storiesApi.create({
+        title: activePrompt.prompt,
+        content: textResponse,
+        excerpt: textResponse.slice(0, 150) + (textResponse.length > 150 ? "..." : ""),
+        category: categoryMap[activePrompt.category] || "wisdom",
+        status: "published",
+      });
+
+      const mappedStory: StoryPrompt = {
+        id: newStory.id,
+        category: activePrompt.category,
+        prompt: activePrompt.prompt,
+        description: "",
+        isCompleted: true,
+        response: {
+          type: "text",
+          content: textResponse,
+          createdAt: newStory.createdAt,
+          storyId: newStory.id,
+        },
+      };
+
+      setCompletedStories((prev) => [mappedStory, ...prev]);
+      setActivePrompt(null);
+      setSelectedCategory(null);
+      setTextResponse("");
+      toast.success("Story saved!");
+    } catch (error) {
+      console.error("Failed to save story:", error);
+      toast.error("Failed to save story");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const deleteStory = async (storyId: string) => {
+    try {
+      await storiesApi.delete(storyId);
+      setCompletedStories((prev) => prev.filter((s) => s.id !== storyId));
+      toast.success("Story deleted");
+    } catch (error) {
+      console.error("Failed to delete story:", error);
+      toast.error("Failed to delete story");
+    }
+  };
 
   const totalPrompts = promptCategories.reduce((sum, cat) => sum + cat.prompts.length, 0);
   const completedCount = completedStories.length;
@@ -363,7 +442,17 @@ export default function StoriesPage() {
       </motion.div>
 
       {/* Recently Completed Stories */}
-      {completedStories.length > 0 && (
+      {isLoading ? (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="rounded-3xl bg-gradient-to-br from-card to-sage-light/10 border border-sage/20 p-12 text-center"
+        >
+          <Loader2 className="w-10 h-10 animate-spin text-sage mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading your stories...</p>
+        </motion.div>
+      ) : completedStories.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -387,11 +476,11 @@ export default function StoriesPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="p-5 rounded-2xl border border-sage/20 bg-gradient-to-br from-card to-sage-light/10 hover:shadow-lg hover:border-sage/40 transition-all duration-300 cursor-pointer group"
+                  className="p-5 rounded-2xl border border-sage/20 bg-gradient-to-br from-card to-sage-light/10 hover:shadow-lg hover:border-sage/40 transition-all duration-300 group"
                 >
                   <div className="flex items-start gap-4">
-                    <div className={`p-2.5 rounded-xl ${category?.bgColor}`}>
-                      <Icon className={`w-5 h-5 ${category?.iconColor}`} />
+                    <div className={`p-2.5 rounded-xl ${category?.bgColor || "bg-sage/15"}`}>
+                      <Icon className={`w-5 h-5 ${category?.iconColor || "text-sage-dark"}`} />
                     </div>
                     <div className="flex-1">
                       <h3 className="font-semibold text-foreground group-hover:text-sage-dark transition-colors">
@@ -421,15 +510,16 @@ export default function StoriesPage() {
                       </div>
                       {story.response?.type === "text" && (
                         <p className="text-sm text-muted-foreground mt-3 line-clamp-2 italic">
-                          "{story.response.content}"
+                          &quot;{story.response.content}&quot;
                         </p>
                       )}
                     </div>
-                    {story.response?.type === "voice" && (
-                      <button className="p-2.5 rounded-full bg-sage/15 text-sage-dark hover:bg-sage/25 transition-colors">
-                        <Play className="w-4 h-4" />
-                      </button>
-                    )}
+                    <button
+                      onClick={() => story.response?.storyId && deleteStory(story.response.storyId)}
+                      className="p-2 rounded-full opacity-0 group-hover:opacity-100 hover:bg-rose-50 text-muted-foreground hover:text-rose-600 transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </motion.div>
               );
@@ -766,12 +856,26 @@ export default function StoriesPage() {
                     setTextResponse("");
                   }}
                   className="hover:bg-sage/10"
+                  disabled={isSaving}
                 >
                   Cancel
                 </Button>
-                <Button className="bg-sage hover:bg-sage-dark text-white">
-                  <CheckCircle2 className="w-4 h-4 mr-2" />
-                  Save Story
+                <Button
+                  className="bg-sage hover:bg-sage-dark text-white"
+                  onClick={saveStory}
+                  disabled={isSaving || (responseType === "text" && !textResponse.trim())}
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 mr-2" />
+                      Save Story
+                    </>
+                  )}
                 </Button>
               </div>
             </motion.div>

@@ -28,7 +28,8 @@
       "Bash(git push:*)",
       "Bash(git commit:*)",
       "Bash(del \"c:\\Users\\rutik\\Desktop\\afterMe\\app\\global-error.tsx\")",
-      "Bash(npm view:*)"
+      "Bash(npm view:*)",
+      "Bash(find:*)"
     ]
   }
 }

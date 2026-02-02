@@ -12,23 +12,15 @@ import {
   Download,
   ArrowLeft,
   Clock,
-  User,
   Heart,
-  Plus,
   Volume2,
   Waves,
   MessageCircle,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-interface Recording {
-  id: string;
-  name: string;
-  duration: number;
-  date: Date;
-  audioUrl: string;
-  recipient?: string;
-}
+import { voiceMessagesApi, blobToBase64, type VoiceMessage } from "@/lib/api";
+import { toast } from "sonner";
 
 // Floating Leaf with variants
 const FloatingLeaf = ({ className, style, size = 40, variant = 1 }: { className?: string; style?: React.CSSProperties; size?: number; variant?: number }) => {
@@ -106,13 +98,22 @@ const GentleRings = ({ className, style }: { className?: string; style?: React.C
   </svg>
 );
 
+interface Recording {
+  id: string;
+  name: string;
+  duration: number;
+  date: Date;
+  audioUrl: string;
+}
+
 export default function VoiceVaultPage() {
   const [isRecording, setIsRecording] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [currentTime, setCurrentTime] = useState(0);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [audioLevels, setAudioLevels] = useState<number[]>(Array(20).fill(0));
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -120,18 +121,48 @@ export default function VoiceVaultPage() {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationRef = useRef<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  // Fetch existing recordings on mount
+  useEffect(() => {
+    fetchRecordings();
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
     };
   }, []);
+
+  const fetchRecordings = async () => {
+    try {
+      setIsLoading(true);
+      const response = await voiceMessagesApi.getAll();
+      const mappedRecordings: Recording[] = response.messages.map((msg: VoiceMessage) => ({
+        id: msg.id,
+        name: msg.title,
+        duration: msg.duration,
+        date: new Date(msg.createdAt),
+        audioUrl: msg.fileUrl,
+      }));
+      setRecordings(mappedRecordings);
+    } catch (error) {
+      console.error("Failed to fetch recordings:", error);
+      toast.error("Failed to load recordings");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
 
       // Set up audio analyzer for visualization
       const audioContext = new AudioContext();
@@ -149,21 +180,42 @@ export default function VoiceVaultPage() {
         audioChunksRef.current.push(event.data);
       };
 
-      mediaRecorder.onstop = () => {
+      mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        const audioUrl = URL.createObjectURL(audioBlob);
+        const duration = currentTime;
 
-        const newRecording: Recording = {
-          id: Date.now().toString(),
-          name: `Recording ${recordings.length + 1}`,
-          duration: currentTime,
-          date: new Date(),
-          audioUrl,
-        };
+        // Convert to base64 and save to API
+        setIsSaving(true);
+        try {
+          const base64Url = await blobToBase64(audioBlob);
+          const newRecording = await voiceMessagesApi.create({
+            title: `Recording ${recordings.length + 1}`,
+            fileUrl: base64Url,
+            fileSize: audioBlob.size,
+            duration: duration,
+            mimeType: "audio/webm",
+          });
 
-        setRecordings((prev) => [newRecording, ...prev]);
+          const mappedRecording: Recording = {
+            id: newRecording.id,
+            name: newRecording.title,
+            duration: newRecording.duration,
+            date: new Date(newRecording.createdAt),
+            audioUrl: newRecording.fileUrl,
+          };
+
+          setRecordings((prev) => [mappedRecording, ...prev]);
+          toast.success("Recording saved!");
+        } catch (error) {
+          console.error("Failed to save recording:", error);
+          toast.error("Failed to save recording");
+        } finally {
+          setIsSaving(false);
+        }
+
         setCurrentTime(0);
         stream.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
       };
 
       mediaRecorder.start();
@@ -178,7 +230,7 @@ export default function VoiceVaultPage() {
       visualize();
     } catch (error) {
       console.error("Error accessing microphone:", error);
-      alert("Could not access microphone. Please grant permission.");
+      toast.error("Could not access microphone. Please grant permission.");
     }
   };
 
@@ -209,7 +261,6 @@ export default function VoiceVaultPage() {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      setIsPaused(false);
 
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -241,11 +292,18 @@ export default function VoiceVaultPage() {
     }
   };
 
-  const deleteRecording = (id: string) => {
-    setRecordings((prev) => prev.filter((r) => r.id !== id));
-    if (playingId === id) {
-      audioRef.current?.pause();
-      setPlayingId(null);
+  const deleteRecording = async (id: string) => {
+    try {
+      await voiceMessagesApi.delete(id);
+      setRecordings((prev) => prev.filter((r) => r.id !== id));
+      if (playingId === id) {
+        audioRef.current?.pause();
+        setPlayingId(null);
+      }
+      toast.success("Recording deleted");
+    } catch (error) {
+      console.error("Failed to delete recording:", error);
+      toast.error("Failed to delete recording");
     }
   };
 
@@ -380,7 +438,12 @@ export default function VoiceVaultPage() {
                     {formatTime(currentTime)}
                   </span>
                   <p className="text-sm text-muted-foreground mt-3 flex items-center justify-center gap-2">
-                    {isRecording ? (
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-sage" />
+                        Saving recording...
+                      </>
+                    ) : isRecording ? (
                       <>
                         <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
                         Recording...
@@ -399,9 +462,10 @@ export default function VoiceVaultPage() {
                   {!isRecording ? (
                     <motion.button
                       onClick={startRecording}
+                      disabled={isSaving}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className="w-24 h-24 rounded-full bg-gradient-to-br from-sage to-sage-dark text-white shadow-lg shadow-sage/30 flex items-center justify-center"
+                      className="w-24 h-24 rounded-full bg-gradient-to-br from-sage to-sage-dark text-white shadow-lg shadow-sage/30 flex items-center justify-center disabled:opacity-50"
                     >
                       <Mic className="w-10 h-10" />
                     </motion.button>
@@ -481,7 +545,12 @@ export default function VoiceVaultPage() {
               </span>
             </div>
 
-            {recordings.length === 0 ? (
+            {isLoading ? (
+              <div className="rounded-3xl bg-gradient-to-br from-card to-sage-light/10 border border-sage/20 p-12 text-center">
+                <Loader2 className="w-10 h-10 animate-spin text-sage mx-auto mb-4" />
+                <p className="text-muted-foreground">Loading your recordings...</p>
+              </div>
+            ) : recordings.length === 0 ? (
               <div className="rounded-3xl bg-gradient-to-br from-card to-sage-light/10 border border-sage/20 p-12 text-center">
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-sage/15 to-sage-light/30 flex items-center justify-center mx-auto mb-4 border-2 border-sage/20">
                   <Waves className="w-10 h-10 text-sage-dark" />

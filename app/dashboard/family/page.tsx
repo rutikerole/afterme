@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
@@ -35,8 +35,11 @@ import {
   Calendar,
   AlertTriangle,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { familyApi, type FamilyMember as ApiFamilyMember } from "@/lib/api";
+import { toast } from "sonner";
 
 type Role = "partner" | "child" | "parent" | "guardian" | "trustee" | "friend";
 type AccessCondition = "always" | "after_death" | "emergency" | "scheduled";
@@ -167,52 +170,45 @@ const accessConditions: { id: AccessCondition; label: string; description: strin
   { id: "scheduled", label: "Scheduled", description: "On a specific future date" },
 ];
 
-const initialMembers: FamilyMember[] = [
-  {
-    id: "1",
-    name: "Priya Sharma",
-    email: "priya@email.com",
-    phone: "+91 98765 43210",
-    role: "partner",
-    status: "active",
-    addedAt: new Date("2024-01-15"),
-    isEmergencyContact: true,
-    canUnlockLegacy: true,
-    permissions: [
-      { vault: "identity", canView: true, condition: "always" },
-      { vault: "finance", canView: true, condition: "always" },
-      { vault: "insurance", canView: true, condition: "always" },
-      { vault: "voice", canView: true, condition: "always" },
-      { vault: "memories", canView: true, condition: "always" },
-      { vault: "legacy", canView: true, condition: "after_death" },
-    ],
-  },
-  {
-    id: "2",
-    name: "Arjun Sharma",
-    email: "arjun@email.com",
-    role: "child",
-    status: "active",
-    addedAt: new Date("2024-02-10"),
-    isEmergencyContact: false,
-    canUnlockLegacy: true,
-    permissions: [
-      { vault: "identity", canView: false, condition: "after_death" },
-      { vault: "finance", canView: true, condition: "after_death" },
-      { vault: "insurance", canView: true, condition: "after_death" },
-      { vault: "voice", canView: true, condition: "always" },
-      { vault: "memories", canView: true, condition: "always" },
-      { vault: "legacy", canView: true, condition: "after_death" },
-    ],
-  },
-];
+// Map API relationship to local role
+const relationshipToRole = (relationship: string): Role => {
+  const map: Record<string, Role> = {
+    "partner": "partner",
+    "spouse": "partner",
+    "child": "child",
+    "son": "child",
+    "daughter": "child",
+    "parent": "parent",
+    "mother": "parent",
+    "father": "parent",
+    "guardian": "guardian",
+    "trustee": "trustee",
+    "friend": "friend",
+  };
+  return map[relationship.toLowerCase()] || "friend";
+};
+
+// Map local role to API relationship
+const roleToRelationship = (role: Role): string => {
+  const map: Record<Role, string> = {
+    "partner": "Partner",
+    "child": "Child",
+    "parent": "Parent",
+    "guardian": "Guardian",
+    "trustee": "Trustee",
+    "friend": "Friend",
+  };
+  return map[role];
+};
 
 export default function TrustedCirclePage() {
-  const [members, setMembers] = useState<FamilyMember[]>(initialMembers);
+  const [members, setMembers] = useState<FamilyMember[]>([]);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showPermissionsModal, setShowPermissionsModal] = useState<FamilyMember | null>(null);
   const [showMemberMenu, setShowMemberMenu] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"members" | "permissions" | "unlock">("members");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -223,31 +219,94 @@ export default function TrustedCirclePage() {
     canUnlockLegacy: false,
   });
 
-  const handleInvite = () => {
+  // Fetch family members on mount
+  useEffect(() => {
+    fetchMembers();
+  }, []);
+
+  const fetchMembers = async () => {
+    try {
+      setIsLoading(true);
+      const response = await familyApi.getAll();
+
+      // Map API members to local format
+      const mappedMembers: FamilyMember[] = response.members.map((m: ApiFamilyMember) => ({
+        id: m.id,
+        name: m.name,
+        email: m.email || "",
+        phone: m.phone,
+        role: relationshipToRole(m.relationship),
+        status: m.acceptedAt ? "active" : "pending",
+        addedAt: new Date(m.createdAt),
+        avatar: m.avatar,
+        isEmergencyContact: m.accessLevel === "executor",
+        canUnlockLegacy: m.canAccessLegacy,
+        permissions: [
+          { vault: "identity", canView: true, condition: "after_death" as AccessCondition },
+          { vault: "finance", canView: true, condition: "after_death" as AccessCondition },
+          { vault: "insurance", canView: true, condition: "after_death" as AccessCondition },
+          { vault: "voice", canView: m.canAccessVoice, condition: "always" as AccessCondition },
+          { vault: "memories", canView: m.canAccessMemories, condition: "always" as AccessCondition },
+          { vault: "legacy", canView: m.canAccessLegacy, condition: "after_death" as AccessCondition },
+        ],
+      }));
+
+      setMembers(mappedMembers);
+    } catch (error) {
+      console.error("Failed to fetch family members:", error);
+      toast.error("Failed to load family members");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleInvite = async () => {
     if (!form.name || !form.email) return;
 
-    const defaultPermissions: Permission[] = vaultTypes.map((vault) => ({
-      vault: vault.id,
-      canView: form.role === "partner",
-      condition: form.role === "partner" ? "always" : "after_death",
-    }));
+    setIsSaving(true);
+    try {
+      const newMember = await familyApi.create({
+        name: form.name,
+        email: form.email,
+        phone: form.phone || undefined,
+        relationship: roleToRelationship(form.role),
+        accessLevel: form.isEmergencyContact ? "executor" : "viewer",
+        canAccessVoice: true,
+        canAccessMemories: true,
+        canAccessStories: true,
+        canAccessVault: form.role === "partner",
+        canAccessLegacy: form.canUnlockLegacy,
+      });
 
-    const newMember: FamilyMember = {
-      id: Date.now().toString(),
-      name: form.name,
-      email: form.email,
-      phone: form.phone || undefined,
-      role: form.role,
-      status: "pending",
-      addedAt: new Date(),
-      isEmergencyContact: form.isEmergencyContact,
-      canUnlockLegacy: form.canUnlockLegacy,
-      permissions: defaultPermissions,
-    };
+      const defaultPermissions: Permission[] = vaultTypes.map((vault) => ({
+        vault: vault.id,
+        canView: form.role === "partner",
+        condition: form.role === "partner" ? "always" : "after_death",
+      }));
 
-    setMembers((prev) => [...prev, newMember]);
-    setShowInviteModal(false);
-    resetForm();
+      const mappedMember: FamilyMember = {
+        id: newMember.id,
+        name: newMember.name,
+        email: newMember.email || "",
+        phone: newMember.phone,
+        role: form.role,
+        status: "pending",
+        addedAt: new Date(),
+        isEmergencyContact: form.isEmergencyContact,
+        canUnlockLegacy: form.canUnlockLegacy,
+        permissions: defaultPermissions,
+      };
+
+      setMembers((prev) => [...prev, mappedMember]);
+      setShowInviteModal(false);
+      resetForm();
+      toast.success("Family member added!");
+    } catch (error) {
+      console.error("Failed to add family member:", error);
+      toast.error("Failed to add family member");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const resetForm = () => {
@@ -261,9 +320,16 @@ export default function TrustedCirclePage() {
     });
   };
 
-  const removeMember = (id: string) => {
-    setMembers((prev) => prev.filter((m) => m.id !== id));
-    setShowMemberMenu(null);
+  const removeMember = async (id: string) => {
+    try {
+      await familyApi.delete(id);
+      setMembers((prev) => prev.filter((m) => m.id !== id));
+      setShowMemberMenu(null);
+      toast.success("Family member removed");
+    } catch (error) {
+      console.error("Failed to remove family member:", error);
+      toast.error("Failed to remove family member");
+    }
   };
 
   const updatePermission = (memberId: string, vaultId: string, updates: Partial<Permission>) => {
@@ -493,7 +559,12 @@ export default function TrustedCirclePage() {
             animate={{ opacity: 1 }}
             className="space-y-4"
           >
-            {members.length === 0 ? (
+            {isLoading ? (
+              <div className="p-16 rounded-3xl border border-sage/20 bg-gradient-to-br from-card to-sage-light/10 text-center">
+                <Loader2 className="w-10 h-10 animate-spin text-sage mx-auto mb-4" />
+                <p className="text-muted-foreground">Loading your trusted circle...</p>
+              </div>
+            ) : members.length === 0 ? (
               <div className="p-16 rounded-3xl border border-sage/20 bg-gradient-to-br from-card to-sage-light/10 text-center">
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-sage/15 to-sage-light/30 flex items-center justify-center mx-auto mb-6 border-2 border-sage/20">
                   <Users className="w-10 h-10 text-sage-dark" />
@@ -1047,16 +1118,26 @@ export default function TrustedCirclePage() {
                       setShowInviteModal(false);
                       resetForm();
                     }}
+                    disabled={isSaving}
                   >
                     Cancel
                   </Button>
                   <Button
                     className="flex-1 bg-sage hover:bg-sage-dark text-white"
                     onClick={handleInvite}
-                    disabled={!form.name || !form.email}
+                    disabled={!form.name || !form.email || isSaving}
                   >
-                    <Send className="w-4 h-4 mr-2" />
-                    Send Invitation
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4 mr-2" />
+                        Send Invitation
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>

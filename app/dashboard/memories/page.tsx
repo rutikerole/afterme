@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,12 +17,12 @@ import {
   LayoutGrid,
   Trash2,
   Edit3,
-  Check,
-  ImageIcon,
-  Sparkles,
   Camera,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { memoriesApi, getBase64FileSize, type Memory as ApiMemory } from "@/lib/api";
+import { toast } from "sonner";
 
 interface Memory {
   id: string;
@@ -112,7 +112,6 @@ export default function MemoryVaultPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "masonry">("grid");
   const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null);
-  const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadPreview, setUploadPreview] = useState<string | null>(null);
   const [uploadForm, setUploadForm] = useState({
@@ -120,8 +119,36 @@ export default function MemoryVaultPage() {
     description: "",
     location: "",
   });
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch memories on mount
+  useEffect(() => {
+    fetchMemories();
+  }, []);
+
+  const fetchMemories = async () => {
+    try {
+      setIsLoading(true);
+      const response = await memoriesApi.getAll();
+      const mappedMemories: Memory[] = response.memories.map((mem: ApiMemory) => ({
+        id: mem.id,
+        imageUrl: mem.mediaUrl,
+        title: mem.title,
+        description: mem.description || "",
+        date: new Date(mem.createdAt),
+        location: mem.location,
+      }));
+      setMemories(mappedMemories);
+    } catch (error) {
+      console.error("Failed to fetch memories:", error);
+      toast.error("Failed to load memories");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -161,34 +188,52 @@ export default function MemoryVaultPage() {
     reader.readAsDataURL(file);
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!uploadPreview) return;
 
-    const newMemory: Memory = {
-      id: Date.now().toString(),
-      imageUrl: uploadPreview,
-      title: uploadForm.title || `Memory ${memories.length + 1}`,
-      description: uploadForm.description,
-      date: new Date(),
-      location: uploadForm.location,
-    };
+    setIsSaving(true);
+    try {
+      const newMemory = await memoriesApi.create({
+        title: uploadForm.title || `Memory ${memories.length + 1}`,
+        description: uploadForm.description || undefined,
+        mediaUrl: uploadPreview,
+        mediaType: "image",
+        fileSize: getBase64FileSize(uploadPreview),
+        location: uploadForm.location || undefined,
+      });
 
-    setMemories((prev) => [newMemory, ...prev]);
-    setShowUploadModal(false);
-    setUploadPreview(null);
-    setUploadForm({ title: "", description: "", location: "" });
+      const mappedMemory: Memory = {
+        id: newMemory.id,
+        imageUrl: newMemory.mediaUrl,
+        title: newMemory.title,
+        description: newMemory.description || "",
+        date: new Date(newMemory.createdAt),
+        location: newMemory.location,
+      };
+
+      setMemories((prev) => [mappedMemory, ...prev]);
+      setShowUploadModal(false);
+      setUploadPreview(null);
+      setUploadForm({ title: "", description: "", location: "" });
+      toast.success("Memory saved!");
+    } catch (error) {
+      console.error("Failed to save memory:", error);
+      toast.error("Failed to save memory");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const deleteMemory = (id: string) => {
-    setMemories((prev) => prev.filter((m) => m.id !== id));
-    setSelectedMemory(null);
-  };
-
-  const updateMemory = (updatedMemory: Memory) => {
-    setMemories((prev) =>
-      prev.map((m) => (m.id === updatedMemory.id ? updatedMemory : m))
-    );
-    setEditingMemory(null);
+  const deleteMemory = async (id: string) => {
+    try {
+      await memoriesApi.delete(id);
+      setMemories((prev) => prev.filter((m) => m.id !== id));
+      setSelectedMemory(null);
+      toast.success("Memory deleted");
+    } catch (error) {
+      console.error("Failed to delete memory:", error);
+      toast.error("Failed to delete memory");
+    }
   };
 
   return (
@@ -350,7 +395,17 @@ export default function MemoryVaultPage() {
         </motion.div>
 
         {/* Memories Grid */}
-        {memories.length === 0 ? (
+        {isLoading ? (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="rounded-3xl bg-gradient-to-br from-card to-sage-light/10 border border-sage/20 p-16 text-center"
+          >
+            <Loader2 className="w-12 h-12 animate-spin text-sage mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading your memories...</p>
+          </motion.div>
+        ) : memories.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -530,15 +585,26 @@ export default function MemoryVaultPage() {
                       setShowUploadModal(false);
                       setUploadPreview(null);
                     }}
+                    disabled={isSaving}
                   >
                     Cancel
                   </Button>
                   <Button
                     className="flex-1 bg-sage hover:bg-sage-dark text-white"
                     onClick={handleUpload}
+                    disabled={isSaving}
                   >
-                    <Heart className="w-4 h-4 mr-2" />
-                    Save Memory
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Heart className="w-4 h-4 mr-2" />
+                        Save Memory
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
@@ -589,7 +655,7 @@ export default function MemoryVaultPage() {
 
                   {selectedMemory.description && (
                     <p className="text-muted-foreground mb-6 leading-relaxed italic">
-                      "{selectedMemory.description}"
+                      &quot;{selectedMemory.description}&quot;
                     </p>
                   )}
 
@@ -614,7 +680,6 @@ export default function MemoryVaultPage() {
                     <Button
                       variant="outline"
                       className="flex-1 border-sage/30 hover:bg-sage/10 hover:border-sage"
-                      onClick={() => setEditingMemory(selectedMemory)}
                     >
                       <Edit3 className="w-4 h-4 mr-2" />
                       Edit
