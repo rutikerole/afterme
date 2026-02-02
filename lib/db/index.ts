@@ -1,48 +1,24 @@
 // ════════════════════════════════════════════════════════════════════════════
 // PRISMA CLIENT - DATABASE CONNECTION
-// Lazy initialization to prevent connection during build
+// Optimized for Vercel serverless environment
 // ════════════════════════════════════════════════════════════════════════════
 
 import { PrismaClient } from "@prisma/client";
 
-// Prevent multiple instances of Prisma Client in development
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-// Lazy initialization - only create client when first accessed
-function getPrismaClient(): PrismaClient {
-  if (globalForPrisma.prisma) {
-    return globalForPrisma.prisma;
-  }
-
-  const client = new PrismaClient({
-    log:
-      process.env.NODE_ENV === "development"
-        ? ["query", "error", "warn"]
-        : ["error"],
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
   });
 
-  if (process.env.NODE_ENV !== "production") {
-    globalForPrisma.prisma = client;
-  }
-
-  return client;
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
 }
 
-// Export a proxy that lazily initializes the client
-export const prisma = new Proxy({} as PrismaClient, {
-  get(_, prop) {
-    const client = getPrismaClient();
-    const value = client[prop as keyof PrismaClient];
-    if (typeof value === "function") {
-      return value.bind(client);
-    }
-    return value;
-  },
-});
-
-// Re-export for convenience
 export default prisma;
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -53,9 +29,7 @@ export default prisma;
  * Safely disconnect from the database
  */
 export async function disconnectDB() {
-  if (globalForPrisma.prisma) {
-    await globalForPrisma.prisma.$disconnect();
-  }
+  await prisma.$disconnect();
 }
 
 /**
@@ -63,8 +37,7 @@ export async function disconnectDB() {
  */
 export async function checkDBHealth(): Promise<boolean> {
   try {
-    const client = getPrismaClient();
-    await client.$queryRaw`SELECT 1`;
+    await prisma.$queryRaw`SELECT 1`;
     return true;
   } catch {
     return false;
@@ -77,6 +50,5 @@ export async function checkDBHealth(): Promise<boolean> {
 export async function withTransaction<T>(
   fn: (tx: Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">) => Promise<T>
 ): Promise<T> {
-  const client = getPrismaClient();
-  return client.$transaction(fn);
+  return prisma.$transaction(fn);
 }
