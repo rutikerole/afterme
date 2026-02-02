@@ -6,6 +6,13 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { email, password } = body;
 
+    if (!email || !password) {
+      return NextResponse.json(
+        { success: false, error: "Email and password are required" },
+        { status: 400 }
+      );
+    }
+
     const result = await login(email, password);
 
     if (!result.success) {
@@ -19,10 +26,12 @@ export async function POST(request: Request) {
       success: true,
       user: result.user,
     });
-  } catch {
+  } catch (error) {
+    console.error("Login API error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { success: false, error: "Invalid request" },
-      { status: 400 }
+      { success: false, error: `Login failed: ${errorMessage}` },
+      { status: 500 }
     );
   }
 }
