@@ -11,19 +11,25 @@ import {
 } from "@/lib/db/vault";
 import { z } from "zod";
 
+// Custom validator for URLs or base64 data URLs
+const urlOrDataUrl = z.string().refine(
+  (val) => val.startsWith("data:") || val.startsWith("http://") || val.startsWith("https://"),
+  { message: "Must be a valid URL or data URL" }
+);
+
 // Validation schema for creating vault items
 const createVaultItemSchema = z.object({
   name: z.string().min(1, "Name is required").max(200),
   description: z.string().max(1000).optional(),
   category: z.enum(["finance", "identity", "insurance", "subscription", "property", "other"]),
   encryptedData: z.string().optional(),
-  fileUrl: z.string().url().optional(),
+  fileUrl: urlOrDataUrl.optional(),
   fileName: z.string().max(255).optional(),
-  fileSize: z.number().int().positive().optional(),
+  fileSize: z.number().int().nonnegative().optional(),
   tags: z.array(z.string()).optional(),
   importance: z.enum(["low", "normal", "high", "critical"]).optional(),
-  expiryDate: z.string().datetime().optional(),
-  reminderDate: z.string().datetime().optional(),
+  expiryDate: z.string().optional(),
+  reminderDate: z.string().optional(),
 });
 
 // GET /api/vault - List all vault items for the current user

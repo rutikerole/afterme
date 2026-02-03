@@ -8,13 +8,19 @@ import {
 } from "@/lib/db/voice-messages";
 import { z } from "zod";
 
+// Custom validator for URLs or base64 data URLs
+const urlOrDataUrl = z.string().refine(
+  (val) => val.startsWith("data:") || val.startsWith("http://") || val.startsWith("https://"),
+  { message: "Must be a valid URL or data URL" }
+);
+
 // Validation schema for creating voice messages
 const createVoiceMessageSchema = z.object({
   title: z.string().min(1, "Title is required").max(100),
   description: z.string().max(500).optional(),
-  fileUrl: z.string().url("Invalid file URL"),
+  fileUrl: urlOrDataUrl,
   fileSize: z.number().int().positive("File size must be positive"),
-  duration: z.number().int().positive("Duration must be positive"),
+  duration: z.number().int().nonnegative("Duration must be non-negative"),
   mimeType: z.string().optional(),
   tags: z.array(z.string()).optional(),
   isPrivate: z.boolean().optional(),

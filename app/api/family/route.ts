@@ -8,13 +8,19 @@ import {
 } from "@/lib/db/family-members";
 import { z } from "zod";
 
+// Custom validator for URLs or base64 data URLs
+const urlOrDataUrl = z.string().refine(
+  (val) => val.startsWith("data:") || val.startsWith("http://") || val.startsWith("https://"),
+  { message: "Must be a valid URL or data URL" }
+);
+
 // Validation schema for creating family members
 const createFamilyMemberSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
   relationship: z.string().min(1, "Relationship is required").max(50),
   email: z.string().email().optional().or(z.literal("")),
   phone: z.string().max(20).optional(),
-  avatar: z.string().url().optional(),
+  avatar: urlOrDataUrl.optional(),
   accessLevel: z.enum(["viewer", "editor", "executor"]).optional(),
   canAccessVoice: z.boolean().optional(),
   canAccessMemories: z.boolean().optional(),

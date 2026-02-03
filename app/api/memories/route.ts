@@ -8,15 +8,21 @@ import {
 } from "@/lib/db/memories";
 import { z } from "zod";
 
+// Custom validator for URLs or base64 data URLs
+const urlOrDataUrl = z.string().refine(
+  (val) => val.startsWith("data:") || val.startsWith("http://") || val.startsWith("https://"),
+  { message: "Must be a valid URL or data URL" }
+);
+
 // Validation schema for creating memories
 const createMemorySchema = z.object({
   title: z.string().min(1, "Title is required").max(200),
   description: z.string().max(2000).optional(),
-  mediaUrl: z.string().url("Media URL is required"),
+  mediaUrl: urlOrDataUrl,
   mediaType: z.enum(["image", "video"]).optional(),
-  thumbnailUrl: z.string().url().optional(),
-  fileSize: z.number().int().positive().optional(),
-  dateTaken: z.string().datetime().optional(),
+  thumbnailUrl: urlOrDataUrl.optional(),
+  fileSize: z.number().int().nonnegative().optional(),
+  dateTaken: z.string().optional(),
   location: z.string().max(200).optional(),
   albumId: z.string().optional(),
   tags: z.array(z.string()).optional(),
