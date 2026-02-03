@@ -21,6 +21,7 @@ export const metadata: Metadata = {
   title: "AfterMe | Preserve Your Legacy",
   description:
     "AfterMe is a digital life vault for preserving memories, voice recordings, and messages for your loved ones.",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
