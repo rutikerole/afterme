@@ -456,6 +456,185 @@ export const vaultApi = {
 };
 
 // =============================================================================
+// TRUSTEES API
+// =============================================================================
+
+export interface Trustee {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  relationship: string;
+  isVerified: boolean;
+  verifiedAt?: string;
+  isActive: boolean;
+  priority: number;
+  createdAt: string;
+}
+
+export interface TrusteesResponse {
+  trustees: Trustee[];
+}
+
+export const trusteesApi = {
+  async getAll(): Promise<TrusteesResponse> {
+    return apiRequest("/api/trustees");
+  },
+
+  async create(data: {
+    name: string;
+    email: string;
+    phone?: string;
+    relationship: string;
+    priority?: number;
+  }): Promise<{ trustee: Trustee }> {
+    return apiRequest("/api/trustees", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  async update(id: string, data: Partial<{
+    name: string;
+    email: string;
+    phone: string;
+    relationship: string;
+    priority: number;
+    isActive: boolean;
+  }>): Promise<{ trustee: Trustee }> {
+    return apiRequest(`/api/trustees/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  },
+
+  async delete(id: string): Promise<void> {
+    return apiRequest(`/api/trustees/${id}`, {
+      method: "DELETE",
+    });
+  },
+};
+
+// =============================================================================
+// LEGACY ACCESS API (Public - no auth required)
+// =============================================================================
+
+export interface LegacyAccessRequest {
+  id: string;
+  status: string;
+  statusMessage?: string;
+  verificationMethod: string;
+  userName: string;
+  gracePeriodEnd?: string;
+  accessExpiresAt?: string;
+  createdAt: string;
+  trusteeConfirmations?: {
+    total: number;
+    confirmed: number;
+  };
+}
+
+export interface LegacyContent {
+  user: {
+    name: string;
+    avatar?: string;
+    bio?: string;
+  };
+  accessExpiresAt: string;
+  content: {
+    voiceMessages: Array<{
+      id: string;
+      title: string;
+      description?: string;
+      fileUrl: string;
+      duration: number;
+      transcript?: string;
+      recordedAt: string;
+      tags: string[];
+    }>;
+    memories: Array<{
+      id: string;
+      title: string;
+      description?: string;
+      mediaType: string;
+      mediaUrl: string;
+      dateTaken?: string;
+      location?: string;
+      tags: string[];
+      people: string[];
+    }>;
+    stories: Array<{
+      id: string;
+      title: string;
+      content: string;
+      excerpt?: string;
+      category: string;
+      coverImageUrl?: string;
+      publishedAt?: string;
+      tags: string[];
+    }>;
+    legacyInstructions: Array<{
+      id: string;
+      title: string;
+      content: string;
+      category: string;
+      attachmentUrls: string[];
+    }>;
+  };
+}
+
+export const legacyAccessApi = {
+  async submitRequest(data: {
+    userEmail: string;
+    requesterName: string;
+    requesterEmail: string;
+    requesterPhone?: string;
+    relationship: string;
+    verificationMethod: "death_certificate" | "trustee_confirmation" | "both";
+    deathCertificateUrl?: string;
+  }): Promise<{ success: boolean; requestId: string; message: string }> {
+    return apiRequest("/api/legacy-access", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  async checkStatus(email: string, requestId?: string): Promise<{ requests: LegacyAccessRequest[] }> {
+    const params = new URLSearchParams({ email });
+    if (requestId) params.set("requestId", requestId);
+    return apiRequest(`/api/legacy-access?${params.toString()}`);
+  },
+
+  async getConfirmationDetails(token: string): Promise<{
+    trusteeName: string;
+    userName: string;
+    requesterName: string;
+    requesterEmail: string;
+    relationship: string;
+    verificationMethod: string;
+    hasDeathCertificate: boolean;
+    requestDate: string;
+  }> {
+    return apiRequest(`/api/legacy-access/confirm?token=${token}`);
+  },
+
+  async submitConfirmation(data: {
+    token: string;
+    action: "confirm" | "deny";
+    notes?: string;
+  }): Promise<{ success: boolean; message: string }> {
+    return apiRequest("/api/legacy-access/confirm", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  async getContent(token: string): Promise<LegacyContent> {
+    return apiRequest(`/api/legacy-access/grant?token=${token}`);
+  },
+};
+
+// =============================================================================
 // HELPER UTILITIES
 // =============================================================================
 

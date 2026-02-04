@@ -49,6 +49,8 @@ model User {
   activities      Activity[]
   achievements    UserAchievement[]
   sessions        Session[]
+  trustees        Trustee[]
+  legacyAccessRequests LegacyAccessRequest[]
 
   // Settings
   settings        UserSettings?
@@ -535,6 +537,122 @@ model LegacyInstruction {
   @@index([userId])
   @@index([category])
   @@map("legacy_instructions")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// LEGACY ACCESS REQUESTS (Family requesting access after death)
+// ════════════════════════════════════════════════════════════════════════════
+
+model Trustee {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Trustee information
+  name            String
+  email           String
+  phone           String?
+  relationship    String    // spouse, child, sibling, friend, lawyer, etc.
+
+  // Verification
+  isVerified      Boolean   @default(false)
+  verificationToken String? @unique
+  verifiedAt      DateTime?
+
+  // Status
+  isActive        Boolean   @default(true)
+  priority        Int       @default(1) // 1 = primary, 2 = secondary, etc.
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  confirmations   TrusteeConfirmation[]
+
+  @@unique([userId, email])
+  @@index([userId])
+  @@index([email])
+  @@map("trustees")
+}
+
+model LegacyAccessRequest {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Requester information
+  requesterName   String
+  requesterEmail  String
+  requesterPhone  String?
+  relationship    String    // spouse, child, parent, sibling, other
+
+  // Verification method
+  verificationMethod String  // death_certificate, trustee_confirmation, both
+
+  // Death certificate (if applicable)
+  deathCertificateUrl String?
+  deathCertificateUploadedAt DateTime?
+
+  // Request status
+  status          String    @default("pending") // pending, under_review, verified, rejected, grace_period, granted, expired
+  statusMessage   String?   // Reason for rejection or additional notes
+
+  // Grace period (7 days after verification)
+  gracePeriodStart DateTime?
+  gracePeriodEnd   DateTime?
+  graceNotificationsSent Int @default(0)
+
+  // Access grant
+  accessGrantedAt DateTime?
+  accessExpiresAt DateTime?
+  accessToken     String?   @unique
+
+  // Verification tracking
+  verifiedBy      String?   // "system", "admin", or trustee email
+  verifiedAt      DateTime?
+
+  // Admin notes
+  adminNotes      String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  trusteeConfirmations TrusteeConfirmation[]
+
+  @@index([userId])
+  @@index([requesterEmail])
+  @@index([status])
+  @@index([accessToken])
+  @@map("legacy_access_requests")
+}
+
+model TrusteeConfirmation {
+  id              String    @id @default(cuid())
+
+  legacyRequestId String
+  legacyRequest   LegacyAccessRequest @relation(fields: [legacyRequestId], references: [id], onDelete: Cascade)
+
+  trusteeId       String
+  trustee         Trustee   @relation(fields: [trusteeId], references: [id], onDelete: Cascade)
+
+  // Confirmation status
+  status          String    @default("pending") // pending, confirmed, denied
+  confirmedAt     DateTime?
+
+  // Token for email verification
+  confirmationToken String? @unique
+
+  // Notes from trustee
+  notes           String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([legacyRequestId, trusteeId])
+  @@index([legacyRequestId])
+  @@index([trusteeId])
+  @@map("trustee_confirmations")
 }
 
 // ════════════════════════════════════════════════════════════════════════════

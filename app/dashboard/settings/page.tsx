@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   User,
@@ -21,9 +21,15 @@ import {
   ChevronRight,
   LogOut,
   Loader2,
+  Users,
+  Heart,
+  Plus,
+  X,
+  Edit2,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
+import { trusteesApi, Trustee } from "@/lib/api";
 
 // Floating Leaf SVG
 const FloatingLeaf = ({ className, style, size = 30 }: { className?: string; style?: React.CSSProperties; size?: number }) => (
@@ -50,6 +56,7 @@ interface SettingsSection {
 const sections: SettingsSection[] = [
   { id: "profile", title: "Profile", icon: <User className="w-5 h-5" />, description: "Manage your personal information" },
   { id: "security", title: "Security", icon: <Lock className="w-5 h-5" />, description: "Password and authentication" },
+  { id: "legacy", title: "Legacy Access", icon: <Heart className="w-5 h-5" />, description: "Manage who can access your memories" },
   { id: "notifications", title: "Notifications", icon: <Bell className="w-5 h-5" />, description: "Email and push notifications" },
   { id: "privacy", title: "Privacy", icon: <Shield className="w-5 h-5" />, description: "Data and privacy controls" },
   { id: "danger", title: "Danger Zone", icon: <AlertTriangle className="w-5 h-5" />, description: "Account deletion" },
@@ -85,6 +92,112 @@ export default function SettingsPage() {
   // Delete account state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
+
+  // Legacy/Trustees state
+  const [trustees, setTrustees] = useState<Trustee[]>([]);
+  const [isLoadingTrustees, setIsLoadingTrustees] = useState(false);
+  const [legacyEnabled, setLegacyEnabled] = useState(false);
+  const [showAddTrustee, setShowAddTrustee] = useState(false);
+  const [editingTrustee, setEditingTrustee] = useState<Trustee | null>(null);
+  const [newTrustee, setNewTrustee] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    relationship: "",
+  });
+
+  // Load trustees when legacy section is active
+  useEffect(() => {
+    if (activeSection === "legacy") {
+      loadTrustees();
+    }
+  }, [activeSection]);
+
+  const loadTrustees = async () => {
+    setIsLoadingTrustees(true);
+    try {
+      const data = await trusteesApi.getAll();
+      setTrustees(data.trustees);
+    } catch (error) {
+      toast.error("Failed to load trustees");
+    } finally {
+      setIsLoadingTrustees(false);
+    }
+  };
+
+  const handleAddTrustee = async () => {
+    if (!newTrustee.name || !newTrustee.email || !newTrustee.relationship) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const { trustee } = await trusteesApi.create({
+        name: newTrustee.name,
+        email: newTrustee.email,
+        phone: newTrustee.phone || undefined,
+        relationship: newTrustee.relationship,
+      });
+      setTrustees([...trustees, trustee]);
+      setNewTrustee({ name: "", email: "", phone: "", relationship: "" });
+      setShowAddTrustee(false);
+      toast.success("Trustee added successfully");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to add trustee");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdateTrustee = async () => {
+    if (!editingTrustee) return;
+    setIsSaving(true);
+    try {
+      const { trustee } = await trusteesApi.update(editingTrustee.id, {
+        name: editingTrustee.name,
+        email: editingTrustee.email,
+        phone: editingTrustee.phone || undefined,
+        relationship: editingTrustee.relationship,
+        isActive: editingTrustee.isActive,
+      });
+      setTrustees(trustees.map((t) => (t.id === trustee.id ? trustee : t)));
+      setEditingTrustee(null);
+      toast.success("Trustee updated successfully");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update trustee");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteTrustee = async (id: string) => {
+    try {
+      await trusteesApi.delete(id);
+      setTrustees(trustees.filter((t) => t.id !== id));
+      toast.success("Trustee removed");
+    } catch (error) {
+      toast.error("Failed to remove trustee");
+    }
+  };
+
+  const handleToggleLegacy = async () => {
+    setIsSaving(true);
+    try {
+      const response = await fetch("/api/auth/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ legacyReleaseEnabled: !legacyEnabled }),
+      });
+      if (!response.ok) throw new Error("Failed to update");
+      setLegacyEnabled(!legacyEnabled);
+      toast.success(legacyEnabled ? "Legacy access disabled" : "Legacy access enabled");
+    } catch (error) {
+      toast.error("Failed to update settings");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -400,6 +513,309 @@ export default function SettingsPage() {
                       {isSaving ? "Updating..." : "Update Password"}
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* Legacy Section */}
+              {activeSection === "legacy" && (
+                <div className="p-6 space-y-6">
+                  <div className="pb-6 border-b border-sage/10">
+                    <h2 className="text-xl font-medium text-foreground">Legacy Access Settings</h2>
+                    <p className="text-muted-foreground text-sm mt-1">
+                      Configure who can access your memories and content after you&apos;re gone
+                    </p>
+                  </div>
+
+                  {/* Enable Legacy Access Toggle */}
+                  <div className="flex items-center justify-between p-4 rounded-xl bg-sage/5 hover:bg-sage/10 transition-colors">
+                    <div>
+                      <p className="font-medium text-foreground">Enable Legacy Access</p>
+                      <p className="text-sm text-muted-foreground">
+                        Allow family members to request access to your content after verification
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleToggleLegacy}
+                      disabled={isSaving}
+                      className={`relative w-12 h-6 rounded-full transition-colors ${legacyEnabled ? "bg-sage" : "bg-stone-300"}`}
+                    >
+                      <div
+                        className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${legacyEnabled ? "translate-x-7" : "translate-x-1"}`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Info Box */}
+                  <div className="p-4 rounded-xl bg-blue-50 border border-blue-200">
+                    <div className="flex items-start gap-3">
+                      <Shield className="w-5 h-5 text-blue-600 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-blue-900">How Legacy Access Works</p>
+                        <ul className="text-sm text-blue-700 mt-2 space-y-1 list-disc list-inside">
+                          <li>Family members can request access by uploading a death certificate</li>
+                          <li>Trustees you designate can confirm or deny requests</li>
+                          <li>A 7-day grace period allows time to prevent unauthorized access</li>
+                          <li>Your voice messages, memories, and stories will be shared</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Trustees Section */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="font-medium text-foreground">Trusted Verifiers</h3>
+                        <p className="text-sm text-muted-foreground">
+                          People who can confirm legacy access requests
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setShowAddTrustee(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-sage/10 text-sage-dark rounded-lg hover:bg-sage/20 transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Trustee
+                      </button>
+                    </div>
+
+                    {isLoadingTrustees ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin text-sage" />
+                      </div>
+                    ) : trustees.length === 0 ? (
+                      <div className="text-center py-8 bg-sage/5 rounded-xl">
+                        <Users className="w-12 h-12 text-sage/40 mx-auto mb-3" />
+                        <p className="text-muted-foreground">No trustees added yet</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Add people you trust to verify legacy access requests
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {trustees.map((trustee) => (
+                          <div
+                            key={trustee.id}
+                            className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${
+                              trustee.isActive
+                                ? "bg-white border-sage/20"
+                                : "bg-stone-50 border-stone-200 opacity-60"
+                            }`}
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-full bg-sage/10 flex items-center justify-center">
+                                <span className="text-sage-dark font-medium">
+                                  {trustee.name.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                              <div>
+                                <p className="font-medium text-foreground">{trustee.name}</p>
+                                <p className="text-sm text-muted-foreground">{trustee.email}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-xs px-2 py-0.5 bg-sage/10 text-sage-dark rounded">
+                                    {trustee.relationship}
+                                  </span>
+                                  {trustee.isVerified ? (
+                                    <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded flex items-center gap-1">
+                                      <CheckCircle2 className="w-3 h-3" />
+                                      Verified
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs px-2 py-0.5 bg-amber-100 text-amber-700 rounded">
+                                      Pending Verification
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setEditingTrustee(trustee)}
+                                className="p-2 text-muted-foreground hover:text-foreground hover:bg-sage/10 rounded-lg transition-colors"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteTrustee(trustee.id)}
+                                className="p-2 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Add Trustee Modal */}
+                  {showAddTrustee && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                      <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-medium text-foreground">Add Trusted Verifier</h3>
+                          <button
+                            onClick={() => setShowAddTrustee(false)}
+                            className="p-2 text-muted-foreground hover:text-foreground rounded-lg"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-1">Name *</label>
+                            <input
+                              type="text"
+                              value={newTrustee.name}
+                              onChange={(e) => setNewTrustee({ ...newTrustee, name: e.target.value })}
+                              placeholder="Full name"
+                              className="w-full px-4 py-2 rounded-lg border border-sage/20 focus:border-sage focus:ring-2 focus:ring-sage/20 outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-1">Email *</label>
+                            <input
+                              type="email"
+                              value={newTrustee.email}
+                              onChange={(e) => setNewTrustee({ ...newTrustee, email: e.target.value })}
+                              placeholder="Email address"
+                              className="w-full px-4 py-2 rounded-lg border border-sage/20 focus:border-sage focus:ring-2 focus:ring-sage/20 outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-1">Phone</label>
+                            <input
+                              type="tel"
+                              value={newTrustee.phone}
+                              onChange={(e) => setNewTrustee({ ...newTrustee, phone: e.target.value })}
+                              placeholder="Phone number (optional)"
+                              className="w-full px-4 py-2 rounded-lg border border-sage/20 focus:border-sage focus:ring-2 focus:ring-sage/20 outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-1">Relationship *</label>
+                            <select
+                              value={newTrustee.relationship}
+                              onChange={(e) => setNewTrustee({ ...newTrustee, relationship: e.target.value })}
+                              className="w-full px-4 py-2 rounded-lg border border-sage/20 focus:border-sage focus:ring-2 focus:ring-sage/20 outline-none"
+                            >
+                              <option value="">Select relationship</option>
+                              <option value="spouse">Spouse / Partner</option>
+                              <option value="child">Child</option>
+                              <option value="sibling">Sibling</option>
+                              <option value="parent">Parent</option>
+                              <option value="friend">Close Friend</option>
+                              <option value="lawyer">Lawyer / Attorney</option>
+                              <option value="other">Other</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div className="flex gap-3 mt-6">
+                          <button
+                            onClick={() => setShowAddTrustee(false)}
+                            className="flex-1 px-4 py-2 border border-sage/20 text-foreground rounded-lg hover:bg-sage/5 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleAddTrustee}
+                            disabled={isSaving}
+                            className="flex-1 px-4 py-2 bg-sage text-white rounded-lg hover:bg-sage-dark transition-colors disabled:opacity-50"
+                          >
+                            {isSaving ? "Adding..." : "Add Trustee"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Edit Trustee Modal */}
+                  {editingTrustee && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                      <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-medium text-foreground">Edit Trustee</h3>
+                          <button
+                            onClick={() => setEditingTrustee(null)}
+                            className="p-2 text-muted-foreground hover:text-foreground rounded-lg"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-1">Name</label>
+                            <input
+                              type="text"
+                              value={editingTrustee.name}
+                              onChange={(e) => setEditingTrustee({ ...editingTrustee, name: e.target.value })}
+                              className="w-full px-4 py-2 rounded-lg border border-sage/20 focus:border-sage focus:ring-2 focus:ring-sage/20 outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-1">Email</label>
+                            <input
+                              type="email"
+                              value={editingTrustee.email}
+                              onChange={(e) => setEditingTrustee({ ...editingTrustee, email: e.target.value })}
+                              className="w-full px-4 py-2 rounded-lg border border-sage/20 focus:border-sage focus:ring-2 focus:ring-sage/20 outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-1">Phone</label>
+                            <input
+                              type="tel"
+                              value={editingTrustee.phone || ""}
+                              onChange={(e) => setEditingTrustee({ ...editingTrustee, phone: e.target.value })}
+                              className="w-full px-4 py-2 rounded-lg border border-sage/20 focus:border-sage focus:ring-2 focus:ring-sage/20 outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-1">Relationship</label>
+                            <select
+                              value={editingTrustee.relationship}
+                              onChange={(e) => setEditingTrustee({ ...editingTrustee, relationship: e.target.value })}
+                              className="w-full px-4 py-2 rounded-lg border border-sage/20 focus:border-sage focus:ring-2 focus:ring-sage/20 outline-none"
+                            >
+                              <option value="spouse">Spouse / Partner</option>
+                              <option value="child">Child</option>
+                              <option value="sibling">Sibling</option>
+                              <option value="parent">Parent</option>
+                              <option value="friend">Close Friend</option>
+                              <option value="lawyer">Lawyer / Attorney</option>
+                              <option value="other">Other</option>
+                            </select>
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-sage/5 rounded-lg">
+                            <span className="text-sm font-medium text-foreground">Active</span>
+                            <button
+                              onClick={() => setEditingTrustee({ ...editingTrustee, isActive: !editingTrustee.isActive })}
+                              className={`relative w-10 h-5 rounded-full transition-colors ${editingTrustee.isActive ? "bg-sage" : "bg-stone-300"}`}
+                            >
+                              <div
+                                className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${editingTrustee.isActive ? "translate-x-5" : "translate-x-0.5"}`}
+                              />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex gap-3 mt-6">
+                          <button
+                            onClick={() => setEditingTrustee(null)}
+                            className="flex-1 px-4 py-2 border border-sage/20 text-foreground rounded-lg hover:bg-sage/5 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleUpdateTrustee}
+                            disabled={isSaving}
+                            className="flex-1 px-4 py-2 bg-sage text-white rounded-lg hover:bg-sage-dark transition-colors disabled:opacity-50"
+                          >
+                            {isSaving ? "Saving..." : "Save Changes"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
