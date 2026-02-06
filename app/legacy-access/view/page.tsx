@@ -9,7 +9,7 @@ type ContentTab = "voice" | "memories" | "stories" | "instructions";
 
 export default function LegacyAccessViewPage() {
   const searchParams = useSearchParams();
-  const token = searchParams.get("token") || "";
+  const token = searchParams?.get("token") || "";
 
   const [content, setContent] = useState<LegacyContent | null>(null);
   const [isLoading, setIsLoading] = useState(true);

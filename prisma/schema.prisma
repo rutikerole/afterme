@@ -39,6 +39,11 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  // Life status for legacy access
+  lifeStatus          String    @default("alive") // alive, incapacitated, gone
+  lifeStatusUpdatedAt DateTime?
+  lifeStatusVerifiedBy String?  // Who verified the status change
+
   // Relations
   familyMembers   FamilyMember[]
   voiceMessages   VoiceMessage[]
@@ -51,6 +56,11 @@ model User {
   sessions        Session[]
   trustees        Trustee[]
   legacyAccessRequests LegacyAccessRequest[]
+
+  // Trusted Circle relations
+  sentInvites     TrustedCircleInvite[] @relation("SentInvites")
+  connectionsAsA  TrustedConnection[]   @relation("ConnectionsAsA")
+  connectionsAsB  TrustedConnection[]   @relation("ConnectionsAsB")
 
   // Settings
   settings        UserSettings?
@@ -142,6 +152,89 @@ model FamilyMember {
 
   @@index([userId])
   @@map("family_members")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TRUSTED CIRCLE - BIDIRECTIONAL FAMILY NETWORK
+// ════════════════════════════════════════════════════════════════════════════
+
+// Invitation to join someone's trusted circle
+model TrustedCircleInvite {
+  id                   String    @id @default(cuid())
+
+  // Who sent the invite
+  senderId             String
+  sender               User      @relation("SentInvites", fields: [senderId], references: [id], onDelete: Cascade)
+
+  // Who is being invited (email - may or may not have account yet)
+  inviteeEmail         String
+  inviteeName          String    // Name as known to sender
+
+  // Relationship from sender's perspective
+  relationshipToSender String    // "father", "mother", "child", "spouse", "sibling", "friend", etc.
+
+  // Secure token for accepting invite
+  token                String    @unique @default(cuid())
+
+  // Access permissions being offered
+  proposedAccessLevel  String    @default("viewer") // viewer, editor, executor
+  proposedPermissions  Json?     // { canAccessVoice: true, canAccessVault: false, ... }
+
+  // Personal message from sender
+  message              String?
+
+  // Status tracking
+  status               String    @default("pending") // pending, accepted, rejected, expired, cancelled
+
+  // Timestamps
+  expiresAt            DateTime  // Invite expires after 30 days
+  respondedAt          DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@unique([senderId, inviteeEmail]) // One pending invite per person per email
+  @@index([inviteeEmail])
+  @@index([token])
+  @@index([status])
+  @@map("trusted_circle_invites")
+}
+
+// Bidirectional trust connection between two users
+model TrustedConnection {
+  id               String    @id @default(cuid())
+
+  // The two connected users (order: A invited B, or alphabetically sorted)
+  userAId          String
+  userA            User      @relation("ConnectionsAsA", fields: [userAId], references: [id], onDelete: Cascade)
+
+  userBId          String
+  userB            User      @relation("ConnectionsAsB", fields: [userBId], references: [id], onDelete: Cascade)
+
+  // Relationship labels (each user's perspective)
+  relationshipAToB String    // How A sees B ("my father")
+  relationshipBToA String    // How B sees A ("my child")
+
+  // Access permissions A grants to B
+  accessAToB       Json      // { accessLevel: "viewer", canAccessVoice: true, canAccessMemories: true, canAccessStories: true, canAccessVault: false, canAccessLegacy: false }
+
+  // Access permissions B grants to A
+  accessBToA       Json      // { accessLevel: "viewer", canAccessVoice: true, canAccessMemories: true, canAccessStories: true, canAccessVault: false, canAccessLegacy: false }
+
+  // Connection metadata
+  connectionOrigin String    @default("invite") // "invite" or "mutual"
+  originInviteId   String?   // Reference to original invite (optional)
+
+  // Status
+  isActive         Boolean   @default(true)
+
+  // Timestamps
+  connectedAt      DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([userAId, userBId]) // Only one connection per pair
+  @@index([userAId])
+  @@index([userBId])
+  @@map("trusted_connections")
 }
 
 // ════════════════════════════════════════════════════════════════════════════

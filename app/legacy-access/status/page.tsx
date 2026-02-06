@@ -17,7 +17,7 @@ const statusColors: Record<string, { bg: string; text: string; label: string }> 
 
 export default function LegacyAccessStatusPage() {
   const searchParams = useSearchParams();
-  const initialEmail = searchParams.get("email") || "";
+  const initialEmail = searchParams?.get("email") || "";
 
   const [email, setEmail] = useState(initialEmail);
   const [requests, setRequests] = useState<LegacyAccessRequest[]>([]);

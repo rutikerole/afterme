@@ -79,7 +79,7 @@ export default function VaultLayout({
     setMounted(true);
   }, []);
 
-  const currentSection = vaultSections.find((s) => pathname.includes(s.id));
+  const currentSection = vaultSections.find((s) => pathname?.includes(s.id));
   const isVaultHome = pathname === "/dashboard/vault";
 
   return (
@@ -266,7 +266,7 @@ export default function VaultLayout({
               {/* Section Links */}
               {vaultSections.map((section) => {
                 const Icon = section.icon;
-                const isActive = pathname.includes(section.id);
+                const isActive = pathname?.includes(section.id);
 
                 return (
                   <Link key={section.id} href={section.href}>
@@ -383,7 +383,7 @@ export default function VaultLayout({
 
                   {vaultSections.map((section) => {
                     const Icon = section.icon;
-                    const isActive = pathname.includes(section.id);
+                    const isActive = pathname?.includes(section.id);
 
                     return (
                       <Link key={section.id} href={section.href} onClick={() => setMobileMenuOpen(false)}>

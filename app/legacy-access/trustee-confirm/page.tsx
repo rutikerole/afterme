@@ -18,7 +18,7 @@ interface ConfirmationDetails {
 
 export default function TrusteeConfirmPage() {
   const searchParams = useSearchParams();
-  const token = searchParams.get("token") || "";
+  const token = searchParams?.get("token") || "";
 
   const [details, setDetails] = useState<ConfirmationDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);

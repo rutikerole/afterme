@@ -635,6 +635,183 @@ export const legacyAccessApi = {
 };
 
 // =============================================================================
+// TRUSTED CIRCLE API
+// =============================================================================
+
+export interface TrustedCircleInvite {
+  id: string;
+  senderId: string;
+  sender: {
+    id: string;
+    name: string;
+    email: string;
+    avatar: string | null;
+  };
+  inviteeEmail: string;
+  inviteeName: string;
+  relationshipToSender: string;
+  token: string;
+  proposedAccessLevel: string;
+  proposedPermissions: AccessPermissions | null;
+  message: string | null;
+  status: "pending" | "accepted" | "rejected" | "expired" | "cancelled";
+  expiresAt: string;
+  respondedAt: string | null;
+  createdAt: string;
+}
+
+export interface AccessPermissions {
+  accessLevel: "viewer" | "editor" | "executor";
+  canAccessVoice: boolean;
+  canAccessMemories: boolean;
+  canAccessStories: boolean;
+  canAccessVault: boolean;
+  canAccessLegacy: boolean;
+}
+
+export interface TrustedConnection {
+  id: string;
+  connectedUser: {
+    id: string;
+    name: string;
+    email: string;
+    avatar: string | null;
+    lifeStatus: string;
+  };
+  myRelationshipToThem: string;
+  theirRelationshipToMe: string;
+  myPermissionsToThem: AccessPermissions;
+  theirPermissionsToMe: AccessPermissions;
+  connectedAt: string;
+  isActive: boolean;
+}
+
+export interface NetworkNode {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string | null;
+  lifeStatus: string;
+  isCurrentUser: boolean;
+  connectionDegree: number;
+}
+
+export interface NetworkEdge {
+  from: string;
+  to: string;
+  relationship: string;
+  connectionId: string;
+}
+
+export interface NetworkGraph {
+  nodes: NetworkNode[];
+  edges: NetworkEdge[];
+}
+
+export const trustedCircleApi = {
+  // ─────────────────────────────────────────────────────────────────────────
+  // INVITES
+  // ─────────────────────────────────────────────────────────────────────────
+
+  async sendInvite(data: {
+    email: string;
+    name: string;
+    relationship: string;
+    accessLevel?: "viewer" | "editor" | "executor";
+    permissions?: Partial<AccessPermissions>;
+    message?: string;
+  }): Promise<{ success: boolean; invite: TrustedCircleInvite; message: string }> {
+    return apiRequest("/api/trusted-circle/invite", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  async getInvites(type?: "sent" | "received" | "all"): Promise<{
+    sent: TrustedCircleInvite[];
+    received: TrustedCircleInvite[];
+    pendingCount: number;
+  }> {
+    const params = type ? `?type=${type}` : "";
+    return apiRequest(`/api/trusted-circle/invites${params}`);
+  },
+
+  async getInviteById(id: string): Promise<{ invite: TrustedCircleInvite }> {
+    return apiRequest(`/api/trusted-circle/invites/${id}`);
+  },
+
+  async acceptInvite(
+    id: string,
+    data: {
+      reciprocalRelationship: string;
+      grantedPermissions?: Partial<AccessPermissions>;
+    }
+  ): Promise<{ success: boolean; connection: TrustedConnection; message: string }> {
+    return apiRequest(`/api/trusted-circle/invites/${id}/accept`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  async rejectInvite(id: string): Promise<{ success: boolean; message: string }> {
+    return apiRequest(`/api/trusted-circle/invites/${id}/reject`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+  },
+
+  async cancelInvite(id: string): Promise<{ success: boolean; message: string }> {
+    return apiRequest(`/api/trusted-circle/invites/${id}`, {
+      method: "DELETE",
+    });
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // CONNECTIONS
+  // ─────────────────────────────────────────────────────────────────────────
+
+  async getConnections(): Promise<{
+    connections: TrustedConnection[];
+    totalCount: number;
+  }> {
+    return apiRequest("/api/trusted-circle/connections");
+  },
+
+  async getConnection(id: string): Promise<{ connection: TrustedConnection }> {
+    return apiRequest(`/api/trusted-circle/connections/${id}`);
+  },
+
+  async updateConnectionPermissions(
+    id: string,
+    permissions: Partial<AccessPermissions>
+  ): Promise<{ success: boolean; message: string }> {
+    return apiRequest(`/api/trusted-circle/connections/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ permissions }),
+    });
+  },
+
+  async removeConnection(id: string): Promise<{ success: boolean; message: string }> {
+    return apiRequest(`/api/trusted-circle/connections/${id}`, {
+      method: "DELETE",
+    });
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // NETWORK
+  // ─────────────────────────────────────────────────────────────────────────
+
+  async getNetwork(depth?: number): Promise<{
+    network: NetworkGraph;
+    currentUserId: string;
+    depth: number;
+  }> {
+    const params = depth ? `?depth=${depth}` : "";
+    return apiRequest(`/api/trusted-circle/network${params}`);
+  },
+};
+
+// =============================================================================
 // HELPER UTILITIES
 // =============================================================================
 
