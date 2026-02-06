@@ -719,7 +719,7 @@ export default function IdentityPage() {
             )}
           </motion.div>
         ) : (
-          /* Family Documents View */
+          /* Family Documents View - Enhanced UI */
           <motion.div
             key="family"
             initial={{ opacity: 0, y: 20 }}
@@ -739,74 +739,285 @@ export default function IdentityPage() {
               </div>
             ) : familyData ? (
               <>
-                {/* Family intro banner */}
+                {/* Beautiful Family Overview Banner */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="p-5 rounded-2xl bg-gradient-to-r from-sage-light/40 to-transparent border border-sage/20"
+                  className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sage/20 via-sage-light/30 to-rose-50/20 border border-sage/20 p-6"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-sage/15 border border-sage/30">
-                      <Heart className="w-5 h-5 text-sage-dark" />
+                  {/* Decorative elements */}
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-sage/10 rounded-full blur-3xl" />
+                  <div className="absolute bottom-0 left-0 w-32 h-32 bg-rose-100/30 rounded-full blur-3xl" />
+
+                  {/* Floating hearts */}
+                  <motion.div
+                    className="absolute top-4 right-8"
+                    animate={{ y: [0, -8, 0], rotate: [-5, 5, -5] }}
+                    transition={{ duration: 4, repeat: Infinity }}
+                  >
+                    <Heart className="w-5 h-5 text-rose-300/50 fill-rose-300/30" />
+                  </motion.div>
+                  <motion.div
+                    className="absolute bottom-6 right-20"
+                    animate={{ y: [0, -5, 0], rotate: [5, -5, 5] }}
+                    transition={{ duration: 3, repeat: Infinity, delay: 1 }}
+                  >
+                    <Heart className="w-4 h-4 text-sage/40 fill-sage/20" />
+                  </motion.div>
+
+                  <div className="relative">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <motion.div
+                          className="p-3 rounded-2xl bg-gradient-to-br from-sage to-sage-dark shadow-lg shadow-sage/20"
+                          whileHover={{ scale: 1.05, rotate: 5 }}
+                        >
+                          <Users className="w-6 h-6 text-white" />
+                        </motion.div>
+                        <div>
+                          <h3 className="font-serif text-xl font-medium text-foreground">
+                            Your <span className="text-sage-dark">Family</span> Vault
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            {familyData.totalMembers} members • All documents in one place
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-medium text-foreground">Family Identity Vault</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Access important documents from your trusted circle - all in one place
-                      </p>
+
+                    {/* Family Members Row */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {/* Current User */}
+                      {familyData.currentUser && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          whileHover={{ scale: 1.05, y: -4 }}
+                          className="relative group cursor-pointer"
+                        >
+                          <div className="relative">
+                            {familyData.currentUser.user.avatar ? (
+                              <img
+                                src={familyData.currentUser.user.avatar}
+                                alt={familyData.currentUser.user.name}
+                                className="w-14 h-14 rounded-2xl object-cover border-3 border-white shadow-lg ring-2 ring-sage/30"
+                              />
+                            ) : (
+                              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sage to-sage-dark flex items-center justify-center border-3 border-white shadow-lg">
+                                <span className="text-lg font-bold text-white">
+                                  {familyData.currentUser.user.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                                </span>
+                              </div>
+                            )}
+                            <motion.div
+                              className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center"
+                              animate={{ scale: [1, 1.2, 1] }}
+                              transition={{ duration: 2, repeat: Infinity }}
+                            >
+                              <span className="text-[8px] text-white font-bold">YOU</span>
+                            </motion.div>
+                          </div>
+                          <div className="mt-2 text-center">
+                            <p className="text-xs font-medium truncate w-14">{familyData.currentUser.user.name.split(" ")[0]}</p>
+                            <p className="text-[10px] text-sage-dark font-semibold">{familyData.currentUser.vaultItems.length} docs</p>
+                          </div>
+                        </motion.div>
+                      )}
+
+                      {/* Connector line */}
+                      {familyData.familyMembers.length > 0 && (
+                        <div className="flex items-center gap-1 px-2">
+                          <div className="w-8 h-px bg-gradient-to-r from-sage/40 to-rose-300/40" />
+                          <Heart className="w-3 h-3 text-rose-400/60 fill-rose-400/40" />
+                          <div className="w-8 h-px bg-gradient-to-r from-rose-300/40 to-sage/40" />
+                        </div>
+                      )}
+
+                      {/* Family Members */}
+                      {familyData.familyMembers.map((member, index) => (
+                        <motion.div
+                          key={member.user.id}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: index * 0.1 }}
+                          whileHover={{ scale: 1.05, y: -4 }}
+                          className="relative group cursor-pointer"
+                        >
+                          <div className="relative">
+                            {member.user.avatar ? (
+                              <img
+                                src={member.user.avatar}
+                                alt={member.user.name}
+                                className="w-14 h-14 rounded-2xl object-cover border-3 border-white shadow-lg group-hover:ring-2 group-hover:ring-sage/30 transition-all"
+                              />
+                            ) : (
+                              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border-3 border-white shadow-lg transition-all group-hover:ring-2 group-hover:ring-sage/30 ${
+                                index % 3 === 0 ? "bg-gradient-to-br from-rose-400 to-rose-500" :
+                                index % 3 === 1 ? "bg-gradient-to-br from-amber-400 to-amber-500" :
+                                "bg-gradient-to-br from-violet-400 to-violet-500"
+                              }`}>
+                                <span className="text-lg font-bold text-white">
+                                  {member.user.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                                </span>
+                              </div>
+                            )}
+                            <motion.div
+                              className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white border border-sage/20 flex items-center justify-center shadow-sm"
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                            >
+                              <FileText className="w-2.5 h-2.5 text-sage-dark" />
+                            </motion.div>
+                          </div>
+                          <div className="mt-2 text-center">
+                            <p className="text-xs font-medium truncate w-14">{member.user.name.split(" ")[0]}</p>
+                            <p className="text-[10px] text-muted-foreground">{member.vaultItems.length} docs</p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+
+                    {/* Quick Stats */}
+                    <div className="mt-6 pt-4 border-t border-sage/10 flex items-center gap-4 flex-wrap">
+                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/60 backdrop-blur-sm">
+                        <Fingerprint className="w-3.5 h-3.5 text-sage" />
+                        <span className="text-xs font-medium">
+                          {(familyData.currentUser?.vaultItems.filter(v => v.identityDoc?.type === 'aadhaar').length || 0) +
+                           familyData.familyMembers.reduce((acc, m) => acc + m.vaultItems.filter(v => v.identityDoc?.type === 'aadhaar').length, 0)} Aadhaar
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/60 backdrop-blur-sm">
+                        <CreditCard className="w-3.5 h-3.5 text-sage" />
+                        <span className="text-xs font-medium">
+                          {(familyData.currentUser?.vaultItems.filter(v => v.identityDoc?.type === 'pan').length || 0) +
+                           familyData.familyMembers.reduce((acc, m) => acc + m.vaultItems.filter(v => v.identityDoc?.type === 'pan').length, 0)} PAN
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/60 backdrop-blur-sm">
+                        <Plane className="w-3.5 h-3.5 text-rose-500" />
+                        <span className="text-xs font-medium">
+                          {(familyData.currentUser?.vaultItems.filter(v => v.identityDoc?.type === 'passport').length || 0) +
+                           familyData.familyMembers.reduce((acc, m) => acc + m.vaultItems.filter(v => v.identityDoc?.type === 'passport').length, 0)} Passports
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
 
-                {/* Current User Section */}
-                {familyData.currentUser && (
-                  <FamilyMemberSection
-                    member={familyData.currentUser.user}
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    items={familyData.currentUser.vaultItems as any}
-                    isCurrentUser={true}
-                    renderItem={(item) => renderDocumentCard(item as unknown as FamilyVaultItem, familyData.currentUser!.user.id, undefined, true)}
-                  />
-                )}
+                {/* All Family Documents - Grid Style */}
+                <div className="space-y-8">
+                  {/* Current User's Documents */}
+                  {familyData.currentUser && familyData.currentUser.vaultItems.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 }}
+                    >
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-sage to-sage-dark flex items-center justify-center">
+                            <span className="text-xs font-bold text-white">
+                              {familyData.currentUser.user.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                            </span>
+                          </div>
+                          <div>
+                            <h4 className="font-serif text-lg font-medium">
+                              Your Documents
+                            </h4>
+                            <p className="text-xs text-muted-foreground">{familyData.currentUser.vaultItems.length} identity documents</p>
+                          </div>
+                        </div>
+                        <div className="flex-1 h-px bg-gradient-to-r from-sage/20 to-transparent" />
+                      </div>
+                      <div className="space-y-3">
+                        {familyData.currentUser.vaultItems.map((item, index) => (
+                          <motion.div
+                            key={item.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.05 }}
+                          >
+                            {renderDocumentCard(item as unknown as FamilyVaultItem, familyData.currentUser!.user.id, undefined, true)}
+                          </motion.div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
 
-                {/* Family Members Sections */}
-                {familyData.familyMembers.map((memberData) => (
-                  <FamilyMemberSection
-                    key={memberData.user.id}
-                    member={memberData.user}
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    items={memberData.vaultItems as any}
-                    isCurrentUser={false}
-                    renderItem={(item) => renderDocumentCard(item as unknown as FamilyVaultItem, memberData.user.id, memberData.user.name, true)}
-                  />
-                ))}
+                  {/* Family Members' Documents */}
+                  {familyData.familyMembers.map((memberData, memberIndex) => (
+                    memberData.vaultItems.length > 0 && (
+                      <motion.div
+                        key={memberData.user.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 + memberIndex * 0.1 }}
+                      >
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                              memberIndex % 3 === 0 ? "bg-gradient-to-br from-rose-400 to-rose-500" :
+                              memberIndex % 3 === 1 ? "bg-gradient-to-br from-amber-400 to-amber-500" :
+                              "bg-gradient-to-br from-violet-400 to-violet-500"
+                            }`}>
+                              <span className="text-xs font-bold text-white">
+                                {memberData.user.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                              </span>
+                            </div>
+                            <div>
+                              <h4 className="font-serif text-lg font-medium">
+                                {memberData.user.name}&apos;s Documents
+                              </h4>
+                              <p className="text-xs text-muted-foreground">{memberData.vaultItems.length} identity documents</p>
+                            </div>
+                          </div>
+                          <div className="flex-1 h-px bg-gradient-to-r from-sage/20 to-transparent" />
+                        </div>
+                        <div className="space-y-3">
+                          {memberData.vaultItems.map((item, index) => (
+                            <motion.div
+                              key={item.id}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.05 }}
+                            >
+                              {renderDocumentCard(item as unknown as FamilyVaultItem, memberData.user.id, memberData.user.name, true)}
+                            </motion.div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )
+                  ))}
+                </div>
 
                 {/* Empty state when no family members */}
-                {familyData.familyMembers.length === 0 && (
+                {familyData.familyMembers.length === 0 && !familyData.currentUser?.vaultItems.length && (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     className="text-center py-16"
                   >
                     <motion.div
-                      className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-sage/15 border border-sage/30 flex items-center justify-center"
-                      animate={{ scale: [1, 1.05, 1] }}
-                      transition={{ duration: 3, repeat: Infinity }}
+                      className="w-24 h-24 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-sage/20 to-rose-50/30 border border-sage/30 flex items-center justify-center"
+                      animate={{ scale: [1, 1.05, 1], rotate: [0, 5, -5, 0] }}
+                      transition={{ duration: 4, repeat: Infinity }}
                     >
-                      <Users className="w-10 h-10 text-sage" />
+                      <Users className="w-12 h-12 text-sage" />
                     </motion.div>
-                    <h3 className="font-serif text-xl font-medium mb-2">No family members yet</h3>
-                    <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-                      Add trusted family members to your circle to share and access important documents together
+                    <h3 className="font-serif text-xl font-medium mb-2">Build Your Family Vault</h3>
+                    <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                      Invite trusted family members to your circle and share important documents securely
                     </p>
-                    <Button
-                      variant="outline"
-                      className="gap-2 border-sage/30 hover:bg-sage/10"
-                      onClick={() => window.location.href = '/dashboard/family'}
-                    >
-                      <Users className="w-4 h-4" />
-                      Go to Trusted Circle
-                    </Button>
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <Button
+                        className="gap-2 bg-gradient-to-r from-sage to-sage-dark text-white shadow-lg shadow-sage/20"
+                        onClick={() => window.location.href = '/dashboard/family'}
+                      >
+                        <Heart className="w-4 h-4" />
+                        Invite Family Members
+                      </Button>
+                    </motion.div>
                   </motion.div>
                 )}
               </>
