@@ -24,10 +24,17 @@ import {
   AlertTriangle,
   ArrowRight,
   Leaf,
+  Users,
+  User,
+  Heart,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FamilyVaultToggle } from "@/components/vault/FamilyVaultToggle";
+import { FamilyMemberSection } from "@/components/vault/FamilyMemberSection";
+import { toast } from "sonner";
 
 type DocumentType = "aadhaar" | "pan" | "passport" | "driving" | "voter" | "other";
 
@@ -40,6 +47,35 @@ interface Document {
   issueDate?: string;
   notes?: string;
   fileUrl?: string;
+}
+
+interface FamilyMember {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string | null;
+  lifeStatus: string;
+}
+
+interface FamilyVaultItem {
+  id: string;
+  name: string;
+  description?: string | null;
+  category: string;
+  identityDoc?: {
+    type: string;
+    documentNumber?: string | null;
+    issueDate?: string | null;
+    expiryDate?: string | null;
+  } | null;
+  expiryDate?: string | null;
+  createdAt: string;
+}
+
+interface FamilyMemberData {
+  user: FamilyMember;
+  vaultItems: FamilyVaultItem[];
+  counts: Record<string, number>;
 }
 
 // Sage-themed document types with warm accents
@@ -124,9 +160,40 @@ export default function IdentityPage() {
   const [editingDoc, setEditingDoc] = useState<Document | null>(null);
   const [mounted, setMounted] = useState(false);
 
+  // Family Vault State
+  const [vaultMode, setVaultMode] = useState<"personal" | "family">("personal");
+  const [familyData, setFamilyData] = useState<{
+    currentUser: FamilyMemberData | null;
+    familyMembers: FamilyMemberData[];
+    totalMembers: number;
+  } | null>(null);
+  const [loadingFamily, setLoadingFamily] = useState(false);
+
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Fetch family vault data when switching to family mode
+  useEffect(() => {
+    if (vaultMode === "family" && !familyData) {
+      fetchFamilyData();
+    }
+  }, [vaultMode]);
+
+  const fetchFamilyData = async () => {
+    setLoadingFamily(true);
+    try {
+      const res = await fetch("/api/vault/family?category=identity");
+      if (!res.ok) throw new Error("Failed to fetch family data");
+      const data = await res.json();
+      setFamilyData(data);
+    } catch (error) {
+      console.error("Error fetching family vault:", error);
+      toast.error("Failed to load family vault data");
+    } finally {
+      setLoadingFamily(false);
+    }
+  };
 
   const toggleNumber = (id: string) => {
     setShowNumbers((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -138,11 +205,11 @@ export default function IdentityPage() {
     return "••••••••" + number.slice(-4);
   };
 
-  const getDocTypeInfo = (type: DocumentType) => {
+  const getDocTypeInfo = (type: DocumentType | string) => {
     return documentTypes.find((d) => d.id === type) || documentTypes[5];
   };
 
-  const isExpiringSoon = (date?: string) => {
+  const isExpiringSoon = (date?: string | null) => {
     if (!date) return false;
     const expiry = new Date(date);
     const today = new Date();
@@ -150,9 +217,204 @@ export default function IdentityPage() {
     return daysLeft <= 90 && daysLeft > 0;
   };
 
-  const isExpired = (date?: string) => {
+  const isExpired = (date?: string | null) => {
     if (!date) return false;
     return new Date(date) < new Date();
+  };
+
+  // Render a single document card (used for both personal and family views)
+  const renderDocumentCard = (
+    doc: Document | FamilyVaultItem,
+    memberId?: string,
+    memberName?: string,
+    isReadOnly: boolean = false
+  ) => {
+    const isPersonalDoc = 'type' in doc;
+    const docType = isPersonalDoc ? doc.type : (doc.identityDoc?.type || 'other');
+    const docNumber = isPersonalDoc ? doc.number : (doc.identityDoc?.documentNumber || '');
+    const docIssueDate = isPersonalDoc ? doc.issueDate : doc.identityDoc?.issueDate;
+    const docExpiryDate = isPersonalDoc ? doc.expiryDate : (doc.identityDoc?.expiryDate || doc.expiryDate);
+    const docNotes = isPersonalDoc ? doc.notes : doc.description;
+
+    const typeInfo = getDocTypeInfo(docType);
+    const Icon = typeInfo.icon;
+    const accent = getAccentStyles(typeInfo.accentType);
+    const expiringSoon = isExpiringSoon(docExpiryDate);
+    const expired = isExpired(docExpiryDate);
+    const showKey = `${memberId || 'personal'}-${doc.id}`;
+
+    return (
+      <motion.div
+        key={doc.id}
+        layout
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95, x: -100 }}
+        transition={{ type: "spring" }}
+        whileHover={{ y: -4, scale: 1.01 }}
+        className="group"
+      >
+        <div className="relative p-6 rounded-3xl border border-sage/20 bg-white/60 backdrop-blur-sm overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-sage/40">
+          {/* Background gradient */}
+          <div className={`absolute inset-0 ${accent.bgLight} opacity-0 group-hover:opacity-50 transition-opacity duration-300`} />
+
+          {/* Decorative corner */}
+          <motion.div
+            className="absolute -top-10 -right-10 w-24 h-24 rounded-full bg-sage/10 blur-2xl"
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 4, repeat: Infinity }}
+          />
+
+          {/* Decorative wavy line */}
+          <svg className="absolute bottom-0 left-0 w-full h-8 opacity-[0.06]" viewBox="0 0 400 30" preserveAspectRatio="none">
+            <path d="M0,15 Q100,5 200,15 T400,15" fill="none" stroke="hsl(var(--sage))" strokeWidth="1" />
+          </svg>
+
+          <div className="relative flex items-start justify-between">
+            <div className="flex items-start gap-5">
+              {/* Icon */}
+              <motion.div
+                className={`p-4 rounded-2xl ${accent.iconBg}`}
+                whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
+                transition={{ duration: 0.5 }}
+              >
+                <Icon className={`w-7 h-7 ${accent.iconText}`} />
+              </motion.div>
+
+              {/* Info */}
+              <div className="space-y-3">
+                <div>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h3 className="font-serif text-xl font-medium">
+                      {isPersonalDoc ? doc.name : typeInfo.name}
+                    </h3>
+
+                    {/* Family member badge */}
+                    {memberName && !isReadOnly && (
+                      <span className="px-2.5 py-1 rounded-full bg-sage/15 text-sage-dark text-xs font-medium flex items-center gap-1.5">
+                        <User className="w-3 h-3" />
+                        {memberName}
+                      </span>
+                    )}
+
+                    {expired && (
+                      <motion.span
+                        className="px-2 py-1 rounded-full bg-red-50 text-red-500 text-xs font-medium flex items-center gap-1 border border-red-200/50"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                      >
+                        <AlertTriangle className="w-3 h-3" />
+                        Expired
+                      </motion.span>
+                    )}
+                    {expiringSoon && !expired && (
+                      <motion.span
+                        className="px-2 py-1 rounded-full bg-amber-50 text-amber-600 text-xs font-medium flex items-center gap-1 border border-amber-200/50"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                      >
+                        <Calendar className="w-3 h-3" />
+                        Expiring Soon
+                      </motion.span>
+                    )}
+                  </div>
+
+                  {/* Document Number */}
+                  {docNumber && (
+                    <div className="flex items-center gap-3 mt-2">
+                      <motion.div
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-sage-light/30 border border-sage/20"
+                        whileHover={{ scale: 1.02 }}
+                      >
+                        <code className="text-sm font-mono font-semibold text-sage-dark">
+                          {maskNumber(docNumber, showNumbers[showKey])}
+                        </code>
+                        <button
+                          onClick={() => toggleNumber(showKey)}
+                          className="p-1.5 rounded-lg hover:bg-sage/10 transition-colors"
+                        >
+                          {showNumbers[showKey] ? (
+                            <EyeOff className="w-4 h-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="w-4 h-4 text-muted-foreground" />
+                          )}
+                        </button>
+                      </motion.div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Dates */}
+                {(docIssueDate || docExpiryDate) && (
+                  <div className="flex items-center gap-4 text-sm flex-wrap">
+                    {docIssueDate && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Calendar className="w-4 h-4" />
+                        <span>Issued: {new Date(docIssueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                      </div>
+                    )}
+                    {docExpiryDate && (
+                      <div className={`flex items-center gap-2 ${expired ? "text-red-500 font-medium" : expiringSoon ? "text-amber-600 font-medium" : "text-muted-foreground"}`}>
+                        <Calendar className="w-4 h-4" />
+                        <span>Expires: {new Date(docExpiryDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Notes */}
+                {docNotes && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-sage" />
+                    {docNotes}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Actions - Only show for personal documents */}
+            {!isReadOnly && isPersonalDoc && (
+              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
+                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditingDoc(doc as Document)}
+                    className="h-10 w-10 p-0 rounded-xl hover:bg-sage/10"
+                  >
+                    <Edit2 className="w-4 h-4 text-sage" />
+                  </Button>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-10 w-10 p-0 rounded-xl text-red-400 hover:text-red-500 hover:bg-red-50"
+                    onClick={() => setDocuments((prev) => prev.filter((d) => d.id !== doc.id))}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </motion.div>
+              </div>
+            )}
+          </div>
+
+          {/* File attachment indicator */}
+          {(doc as Document).fileUrl && (
+            <motion.div
+              className="absolute bottom-4 right-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sage/15 text-sage-dark text-xs font-medium border border-sage/30">
+                <FileText className="w-3 h-3" />
+                Document attached
+              </span>
+            </motion.div>
+          )}
+        </div>
+      </motion.div>
+    );
   };
 
   return (
@@ -229,7 +491,7 @@ export default function IdentityPage() {
         </svg>
 
         <div className="relative p-8">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
               <motion.div
                 className="p-4 rounded-2xl bg-sage/20 backdrop-blur-sm border border-sage/30"
@@ -255,228 +517,196 @@ export default function IdentityPage() {
               </div>
             </div>
 
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                onClick={() => setShowAddModal(true)}
-                className="gap-2 bg-sage hover:bg-sage-dark text-white shadow-lg shadow-sage/20"
-              >
-                <Plus className="w-4 h-4" />
-                Add Document
-              </Button>
-            </motion.div>
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Family/Personal Toggle */}
+              <FamilyVaultToggle
+                mode={vaultMode}
+                onModeChange={setVaultMode}
+                familyCount={familyData?.familyMembers.length || 0}
+              />
+
+              {vaultMode === "personal" && (
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    onClick={() => setShowAddModal(true)}
+                    className="gap-2 bg-sage hover:bg-sage-dark text-white shadow-lg shadow-sage/20"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Document
+                  </Button>
+                </motion.div>
+              )}
+            </div>
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-4 mt-6">
+          <div className="flex items-center gap-4 mt-6 flex-wrap">
             <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/60 backdrop-blur-sm border border-sage/20">
               <FileText className="w-4 h-4 text-sage" />
-              <span className="text-foreground font-medium">{documents.length} Documents</span>
+              <span className="text-foreground font-medium">
+                {vaultMode === "personal"
+                  ? `${documents.length} Documents`
+                  : `${familyData?.totalMembers || 1} Family Members`
+                }
+              </span>
             </div>
             <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/60 backdrop-blur-sm border border-sage/20">
               <Lock className="w-4 h-4 text-sage" />
               <span className="text-foreground font-medium">Encrypted</span>
             </div>
+            {vaultMode === "family" && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-sage/15 border border-sage/30"
+              >
+                <Users className="w-4 h-4 text-sage-dark" />
+                <span className="text-sage-dark font-medium">Family View</span>
+              </motion.div>
+            )}
           </div>
         </div>
       </motion.div>
 
-      {/* Documents Grid */}
-      <motion.div variants={itemVariants} className="space-y-4">
-        <AnimatePresence mode="popLayout">
-          {documents.map((doc, index) => {
-            const typeInfo = getDocTypeInfo(doc.type);
-            const Icon = typeInfo.icon;
-            const accent = getAccentStyles(typeInfo.accentType);
-            const expiringSoon = isExpiringSoon(doc.expiryDate);
-            const expired = isExpired(doc.expiryDate);
+      {/* Content based on mode */}
+      <AnimatePresence mode="wait">
+        {vaultMode === "personal" ? (
+          /* Personal Documents View */
+          <motion.div
+            key="personal"
+            variants={itemVariants}
+            initial="hidden"
+            animate="visible"
+            exit={{ opacity: 0, y: -20 }}
+            className="space-y-4"
+          >
+            <AnimatePresence mode="popLayout">
+              {documents.map((doc) => renderDocumentCard(doc))}
+            </AnimatePresence>
 
-            return (
+            {/* Empty State */}
+            {documents.length === 0 && (
               <motion.div
-                key={doc.id}
-                layout
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95, x: -100 }}
-                transition={{ delay: index * 0.05, type: "spring" }}
-                whileHover={{ y: -4, scale: 1.01 }}
-                className="group"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center py-20"
               >
-                <div className="relative p-6 rounded-3xl border border-sage/20 bg-white/60 backdrop-blur-sm overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-sage/40">
-                  {/* Background gradient */}
-                  <div className={`absolute inset-0 ${accent.bgLight} opacity-0 group-hover:opacity-50 transition-opacity duration-300`} />
-
-                  {/* Decorative corner */}
-                  <motion.div
-                    className="absolute -top-10 -right-10 w-24 h-24 rounded-full bg-sage/10 blur-2xl"
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{ duration: 4, repeat: Infinity }}
-                  />
-
-                  {/* Decorative wavy line */}
-                  <svg className="absolute bottom-0 left-0 w-full h-8 opacity-[0.06]" viewBox="0 0 400 30" preserveAspectRatio="none">
-                    <path d="M0,15 Q100,5 200,15 T400,15" fill="none" stroke="hsl(var(--sage))" strokeWidth="1" />
-                  </svg>
-
-                  <div className="relative flex items-start justify-between">
-                    <div className="flex items-start gap-5">
-                      {/* Icon */}
-                      <motion.div
-                        className={`p-4 rounded-2xl ${accent.iconBg}`}
-                        whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
-                        transition={{ duration: 0.5 }}
-                      >
-                        <Icon className={`w-7 h-7 ${accent.iconText}`} />
-                      </motion.div>
-
-                      {/* Info */}
-                      <div className="space-y-3">
-                        <div>
-                          <div className="flex items-center gap-3">
-                            <h3 className="font-serif text-xl font-medium">{doc.name}</h3>
-                            {expired && (
-                              <motion.span
-                                className="px-2 py-1 rounded-full bg-red-50 text-red-500 text-xs font-medium flex items-center gap-1 border border-red-200/50"
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                              >
-                                <AlertTriangle className="w-3 h-3" />
-                                Expired
-                              </motion.span>
-                            )}
-                            {expiringSoon && !expired && (
-                              <motion.span
-                                className="px-2 py-1 rounded-full bg-amber-50 text-amber-600 text-xs font-medium flex items-center gap-1 border border-amber-200/50"
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                              >
-                                <Calendar className="w-3 h-3" />
-                                Expiring Soon
-                              </motion.span>
-                            )}
-                          </div>
-
-                          {/* Document Number */}
-                          <div className="flex items-center gap-3 mt-2">
-                            <motion.div
-                              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-sage-light/30 border border-sage/20"
-                              whileHover={{ scale: 1.02 }}
-                            >
-                              <code className="text-sm font-mono font-semibold text-sage-dark">
-                                {maskNumber(doc.number, showNumbers[doc.id])}
-                              </code>
-                              <button
-                                onClick={() => toggleNumber(doc.id)}
-                                className="p-1.5 rounded-lg hover:bg-sage/10 transition-colors"
-                              >
-                                {showNumbers[doc.id] ? (
-                                  <EyeOff className="w-4 h-4 text-muted-foreground" />
-                                ) : (
-                                  <Eye className="w-4 h-4 text-muted-foreground" />
-                                )}
-                              </button>
-                            </motion.div>
-                          </div>
-                        </div>
-
-                        {/* Dates */}
-                        {(doc.issueDate || doc.expiryDate) && (
-                          <div className="flex items-center gap-4 text-sm">
-                            {doc.issueDate && (
-                              <div className="flex items-center gap-2 text-muted-foreground">
-                                <Calendar className="w-4 h-4" />
-                                <span>Issued: {new Date(doc.issueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
-                              </div>
-                            )}
-                            {doc.expiryDate && (
-                              <div className={`flex items-center gap-2 ${expired ? "text-red-500 font-medium" : expiringSoon ? "text-amber-600 font-medium" : "text-muted-foreground"}`}>
-                                <Calendar className="w-4 h-4" />
-                                <span>Expires: {new Date(doc.expiryDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Notes */}
-                        {doc.notes && (
-                          <p className="text-sm text-muted-foreground flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-sage" />
-                            {doc.notes}
-                          </p>
-                        )}
-                      </div>
+                <motion.div
+                  className="w-24 h-24 mx-auto mb-6 rounded-3xl bg-sage/15 border border-sage/30 flex items-center justify-center"
+                  animate={{ rotate: [0, 5, -5, 0] }}
+                  transition={{ duration: 4, repeat: Infinity }}
+                >
+                  <Shield className="w-12 h-12 text-sage" />
+                </motion.div>
+                <h3 className="font-serif text-xl font-medium mb-2">No documents yet</h3>
+                <p className="text-muted-foreground mb-6">
+                  Start by adding your identity documents
+                </p>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button onClick={() => setShowAddModal(true)} size="lg" className="gap-2 bg-sage hover:bg-sage-dark">
+                    <Plus className="w-4 h-4" />
+                    Add Your First Document
+                  </Button>
+                </motion.div>
+              </motion.div>
+            )}
+          </motion.div>
+        ) : (
+          /* Family Documents View */
+          <motion.div
+            key="family"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="space-y-6"
+          >
+            {loadingFamily ? (
+              /* Loading State */
+              <div className="flex flex-col items-center justify-center py-20">
+                <motion.div
+                  className="w-16 h-16 rounded-full border-4 border-sage/30 border-t-sage"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                />
+                <p className="mt-4 text-muted-foreground">Loading family vault...</p>
+              </div>
+            ) : familyData ? (
+              <>
+                {/* Family intro banner */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-5 rounded-2xl bg-gradient-to-r from-sage-light/40 to-transparent border border-sage/20"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-sage/15 border border-sage/30">
+                      <Heart className="w-5 h-5 text-sage-dark" />
                     </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
-                      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditingDoc(doc)}
-                          className="h-10 w-10 p-0 rounded-xl hover:bg-sage/10"
-                        >
-                          <Edit2 className="w-4 h-4 text-sage" />
-                        </Button>
-                      </motion.div>
-                      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-10 w-10 p-0 rounded-xl text-red-400 hover:text-red-500 hover:bg-red-50"
-                          onClick={() => setDocuments((prev) => prev.filter((d) => d.id !== doc.id))}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </motion.div>
+                    <div>
+                      <h3 className="font-medium text-foreground">Family Identity Vault</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Access important documents from your trusted circle - all in one place
+                      </p>
                     </div>
                   </div>
+                </motion.div>
 
-                  {/* File attachment indicator */}
-                  {doc.fileUrl && (
+                {/* Current User Section */}
+                {familyData.currentUser && (
+                  <FamilyMemberSection
+                    member={familyData.currentUser.user}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    items={familyData.currentUser.vaultItems as any}
+                    isCurrentUser={true}
+                    renderItem={(item) => renderDocumentCard(item as unknown as FamilyVaultItem, familyData.currentUser!.user.id, undefined, true)}
+                  />
+                )}
+
+                {/* Family Members Sections */}
+                {familyData.familyMembers.map((memberData) => (
+                  <FamilyMemberSection
+                    key={memberData.user.id}
+                    member={memberData.user}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    items={memberData.vaultItems as any}
+                    isCurrentUser={false}
+                    renderItem={(item) => renderDocumentCard(item as unknown as FamilyVaultItem, memberData.user.id, memberData.user.name, true)}
+                  />
+                ))}
+
+                {/* Empty state when no family members */}
+                {familyData.familyMembers.length === 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-center py-16"
+                  >
                     <motion.div
-                      className="absolute bottom-4 right-4"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
+                      className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-sage/15 border border-sage/30 flex items-center justify-center"
+                      animate={{ scale: [1, 1.05, 1] }}
+                      transition={{ duration: 3, repeat: Infinity }}
                     >
-                      <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sage/15 text-sage-dark text-xs font-medium border border-sage/30">
-                        <FileText className="w-3 h-3" />
-                        Document attached
-                      </span>
+                      <Users className="w-10 h-10 text-sage" />
                     </motion.div>
-                  )}
-                </div>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
-
-        {/* Empty State */}
-        {documents.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-20"
-          >
-            <motion.div
-              className="w-24 h-24 mx-auto mb-6 rounded-3xl bg-sage/15 border border-sage/30 flex items-center justify-center"
-              animate={{ rotate: [0, 5, -5, 0] }}
-              transition={{ duration: 4, repeat: Infinity }}
-            >
-              <Shield className="w-12 h-12 text-sage" />
-            </motion.div>
-            <h3 className="font-serif text-xl font-medium mb-2">No documents yet</h3>
-            <p className="text-muted-foreground mb-6">
-              Start by adding your identity documents
-            </p>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button onClick={() => setShowAddModal(true)} size="lg" className="gap-2 bg-sage hover:bg-sage-dark">
-                <Plus className="w-4 h-4" />
-                Add Your First Document
-              </Button>
-            </motion.div>
+                    <h3 className="font-serif text-xl font-medium mb-2">No family members yet</h3>
+                    <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                      Add trusted family members to your circle to share and access important documents together
+                    </p>
+                    <Button
+                      variant="outline"
+                      className="gap-2 border-sage/30 hover:bg-sage/10"
+                      onClick={() => window.location.href = '/dashboard/family'}
+                    >
+                      <Users className="w-4 h-4" />
+                      Go to Trusted Circle
+                    </Button>
+                  </motion.div>
+                )}
+              </>
+            ) : null}
           </motion.div>
         )}
-      </motion.div>
+      </AnimatePresence>
 
       {/* Add Document Modal */}
       <AnimatePresence>
