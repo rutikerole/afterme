@@ -30,7 +30,10 @@
       "Bash(del \"c:\\Users\\rutik\\Desktop\\afterMe\\app\\global-error.tsx\")",
       "Bash(npm view:*)",
       "Bash(find:*)",
-      "Bash(del \"c:\\Users\\rutik\\Desktop\\afterMe\\public\\favicon.ico\")"
+      "Bash(del \"c:\\Users\\rutik\\Desktop\\afterMe\\public\\favicon.ico\")",
+      "Bash(dir:*)",
+      "Bash(npx tsx:*)",
+      "Bash(npx next build)"
     ]
   }
 }

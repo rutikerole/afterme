@@ -111,30 +111,6 @@ const getAccentStyles = (accentType: string) => {
   }
 };
 
-const initialDocuments: Document[] = [
-  {
-    id: "1",
-    type: "aadhaar",
-    name: "Aadhaar Card",
-    number: "XXXX-XXXX-1234",
-    notes: "Original at home safe",
-  },
-  {
-    id: "2",
-    type: "pan",
-    name: "PAN Card",
-    number: "ABCDE1234F",
-  },
-  {
-    id: "3",
-    type: "passport",
-    name: "Passport",
-    number: "J12345678",
-    expiryDate: "2028-05-15",
-    issueDate: "2018-05-15",
-  },
-];
-
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -153,12 +129,14 @@ const itemVariants = {
 };
 
 export default function IdentityPage() {
-  const [documents, setDocuments] = useState<Document[]>(initialDocuments);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedType, setSelectedType] = useState<DocumentType | null>(null);
   const [showNumbers, setShowNumbers] = useState<Record<string, boolean>>({});
   const [editingDoc, setEditingDoc] = useState<Document | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // Family Vault State
   const [vaultMode, setVaultMode] = useState<"personal" | "family">("personal");
@@ -169,16 +147,56 @@ export default function IdentityPage() {
   } | null>(null);
   const [loadingFamily, setLoadingFamily] = useState(false);
 
+  // Fetch personal documents on mount
   useEffect(() => {
     setMounted(true);
+    fetchDocuments();
   }, []);
 
   // Fetch family vault data when switching to family mode
   useEffect(() => {
-    if (vaultMode === "family" && !familyData) {
+    if (vaultMode === "family") {
       fetchFamilyData();
     }
   }, [vaultMode]);
+
+  const fetchDocuments = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/vault/identity");
+      if (!res.ok) throw new Error("Failed to fetch documents");
+      const data = await res.json();
+
+      // Transform API response to Document format
+      const docs: Document[] = data.documents.map((item: {
+        id: string;
+        name: string;
+        description?: string | null;
+        expiryDate?: string | null;
+        identityDoc?: {
+          type: string;
+          documentNumber?: string | null;
+          issueDate?: string | null;
+          expiryDate?: string | null;
+        } | null;
+      }) => ({
+        id: item.id,
+        type: (item.identityDoc?.type || "other") as DocumentType,
+        name: item.name,
+        number: item.identityDoc?.documentNumber || "",
+        expiryDate: item.identityDoc?.expiryDate ? new Date(item.identityDoc.expiryDate).toISOString().split("T")[0] : undefined,
+        issueDate: item.identityDoc?.issueDate ? new Date(item.identityDoc.issueDate).toISOString().split("T")[0] : undefined,
+        notes: item.description || undefined,
+      }));
+
+      setDocuments(docs);
+    } catch (error) {
+      console.error("Error fetching documents:", error);
+      toast.error("Failed to load documents");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchFamilyData = async () => {
     setLoadingFamily(true);
@@ -192,6 +210,81 @@ export default function IdentityPage() {
       toast.error("Failed to load family vault data");
     } finally {
       setLoadingFamily(false);
+    }
+  };
+
+  const saveDocument = async (doc: Omit<Document, "id">) => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/vault/identity", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: doc.type,
+          name: doc.name,
+          documentNumber: doc.number,
+          issueDate: doc.issueDate,
+          expiryDate: doc.expiryDate,
+          notes: doc.notes,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to save document");
+
+      toast.success("Document saved successfully!");
+      fetchDocuments(); // Refresh the list
+      setShowAddModal(false);
+      setSelectedType(null);
+    } catch (error) {
+      console.error("Error saving document:", error);
+      toast.error("Failed to save document");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateDocument = async (id: string, doc: Partial<Document>) => {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/vault/identity/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: doc.type,
+          name: doc.name,
+          documentNumber: doc.number,
+          issueDate: doc.issueDate,
+          expiryDate: doc.expiryDate,
+          notes: doc.notes,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to update document");
+
+      toast.success("Document updated successfully!");
+      fetchDocuments(); // Refresh the list
+      setEditingDoc(null);
+    } catch (error) {
+      console.error("Error updating document:", error);
+      toast.error("Failed to update document");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteDocument = async (id: string) => {
+    try {
+      const res = await fetch(`/api/vault/identity/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) throw new Error("Failed to delete document");
+
+      toast.success("Document deleted");
+      setDocuments((prev) => prev.filter((d) => d.id !== id));
+    } catch (error) {
+      console.error("Error deleting document:", error);
+      toast.error("Failed to delete document");
     }
   };
 
@@ -390,7 +483,7 @@ export default function IdentityPage() {
                     variant="ghost"
                     size="sm"
                     className="h-10 w-10 p-0 rounded-xl text-red-400 hover:text-red-500 hover:bg-red-50"
-                    onClick={() => setDocuments((prev) => prev.filter((d) => d.id !== doc.id))}
+                    onClick={() => deleteDocument(doc.id)}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -580,35 +673,49 @@ export default function IdentityPage() {
             exit={{ opacity: 0, y: -20 }}
             className="space-y-4"
           >
-            <AnimatePresence mode="popLayout">
-              {documents.map((doc) => renderDocumentCard(doc))}
-            </AnimatePresence>
-
-            {/* Empty State */}
-            {documents.length === 0 && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-20"
-              >
+            {loading ? (
+              /* Loading State */
+              <div className="flex flex-col items-center justify-center py-20">
                 <motion.div
-                  className="w-24 h-24 mx-auto mb-6 rounded-3xl bg-sage/15 border border-sage/30 flex items-center justify-center"
-                  animate={{ rotate: [0, 5, -5, 0] }}
-                  transition={{ duration: 4, repeat: Infinity }}
-                >
-                  <Shield className="w-12 h-12 text-sage" />
-                </motion.div>
-                <h3 className="font-serif text-xl font-medium mb-2">No documents yet</h3>
-                <p className="text-muted-foreground mb-6">
-                  Start by adding your identity documents
-                </p>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button onClick={() => setShowAddModal(true)} size="lg" className="gap-2 bg-sage hover:bg-sage-dark">
-                    <Plus className="w-4 h-4" />
-                    Add Your First Document
-                  </Button>
-                </motion.div>
-              </motion.div>
+                  className="w-16 h-16 rounded-full border-4 border-sage/30 border-t-sage"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                />
+                <p className="mt-4 text-muted-foreground">Loading your documents...</p>
+              </div>
+            ) : (
+              <>
+                <AnimatePresence mode="popLayout">
+                  {documents.map((doc) => renderDocumentCard(doc))}
+                </AnimatePresence>
+
+                {/* Empty State */}
+                {documents.length === 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-center py-20"
+                  >
+                    <motion.div
+                      className="w-24 h-24 mx-auto mb-6 rounded-3xl bg-sage/15 border border-sage/30 flex items-center justify-center"
+                      animate={{ rotate: [0, 5, -5, 0] }}
+                      transition={{ duration: 4, repeat: Infinity }}
+                    >
+                      <Shield className="w-12 h-12 text-sage" />
+                    </motion.div>
+                    <h3 className="font-serif text-xl font-medium mb-2">No documents yet</h3>
+                    <p className="text-muted-foreground mb-6">
+                      Start by adding your identity documents
+                    </p>
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <Button onClick={() => setShowAddModal(true)} size="lg" className="gap-2 bg-sage hover:bg-sage-dark">
+                        <Plus className="w-4 h-4" />
+                        Add Your First Document
+                      </Button>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </>
             )}
           </motion.div>
         ) : (
@@ -791,11 +898,8 @@ export default function IdentityPage() {
                     setShowAddModal(false);
                     setSelectedType(null);
                   }}
-                  onSave={(doc) => {
-                    setDocuments((prev) => [...prev, { ...doc, id: Date.now().toString() }]);
-                    setShowAddModal(false);
-                    setSelectedType(null);
-                  }}
+                  onSave={saveDocument}
+                  saving={saving}
                 />
               )}
             </motion.div>
@@ -811,10 +915,12 @@ function AddDocumentForm({
   type,
   onClose,
   onSave,
+  saving = false,
 }: {
   type: DocumentType;
   onClose: () => void;
   onSave: (doc: Omit<Document, "id">) => void;
+  saving?: boolean;
 }) {
   const typeInfo = documentTypes.find((d) => d.id === type)!;
   const Icon = typeInfo.icon;
@@ -989,13 +1095,26 @@ function AddDocumentForm({
       </div>
 
       <div className="p-6 border-t border-sage/20 flex justify-end gap-3 bg-sage-light/20">
-        <Button type="button" variant="ghost" onClick={onClose} className="rounded-xl">
+        <Button type="button" variant="ghost" onClick={onClose} className="rounded-xl" disabled={saving}>
           Cancel
         </Button>
-        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-          <Button type="submit" className="rounded-xl gap-2 bg-sage hover:bg-sage-dark">
-            <CheckCircle2 className="w-4 h-4" />
-            Save Document
+        <motion.div whileHover={{ scale: saving ? 1 : 1.02 }} whileTap={{ scale: saving ? 1 : 0.98 }}>
+          <Button type="submit" className="rounded-xl gap-2 bg-sage hover:bg-sage-dark" disabled={saving}>
+            {saving ? (
+              <>
+                <motion.div
+                  className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                />
+                Saving...
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="w-4 h-4" />
+                Save Document
+              </>
+            )}
           </Button>
         </motion.div>
       </div>
