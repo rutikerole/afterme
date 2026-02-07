@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { sendGracePeriodNotificationEmail, sendFalseAlarmNotificationEmail } from "@/lib/email";
 import { z } from "zod";
-import crypto from "crypto";
 
 const confirmationSchema = z.object({
   token: z.string().min(1, "Token is required"),
@@ -81,6 +81,15 @@ export async function POST(request: NextRequest) {
           verifiedBy: confirmation.trustee.email,
           verifiedAt: new Date(),
         },
+      });
+
+      // Send notification email to the user (in case of false positive)
+      const legacyRequest = confirmation.legacyRequest;
+      await sendFalseAlarmNotificationEmail({
+        userEmail: legacyRequest.user.email,
+        userName: legacyRequest.user.name || 'User',
+        requesterName: legacyRequest.requesterName,
+        requesterEmail: legacyRequest.requesterEmail,
       });
 
       return NextResponse.json({
@@ -223,7 +232,8 @@ async function startGracePeriod(requestId: string, verifiedBy: string) {
   const gracePeriodEnd = new Date();
   gracePeriodEnd.setDate(gracePeriodEnd.getDate() + gracePeriodDays);
 
-  await prisma.legacyAccessRequest.update({
+  // Get the legacy request with user info
+  const legacyRequest = await prisma.legacyAccessRequest.update({
     where: { id: requestId },
     data: {
       status: "grace_period",
@@ -233,8 +243,29 @@ async function startGracePeriod(requestId: string, verifiedBy: string) {
       gracePeriodStart,
       gracePeriodEnd,
     },
+    include: {
+      user: {
+        select: { name: true, email: true },
+      },
+    },
   });
 
-  // TODO: Send notification email to requester about grace period
-  // TODO: Send notification email to the user (in case of false positive)
+  const accessLink = `${process.env.NEXT_PUBLIC_APP_URL}/legacy-access/status?email=${encodeURIComponent(legacyRequest.requesterEmail)}`;
+
+  // Send notification email to requester about grace period
+  await sendGracePeriodNotificationEmail({
+    requesterEmail: legacyRequest.requesterEmail,
+    requesterName: legacyRequest.requesterName,
+    userName: legacyRequest.user.name || 'User',
+    gracePeriodEnds: gracePeriodEnd,
+    accessLink,
+  });
+
+  // Send notification email to the user (in case of false positive)
+  await sendFalseAlarmNotificationEmail({
+    userEmail: legacyRequest.user.email,
+    userName: legacyRequest.user.name || 'User',
+    requesterName: legacyRequest.requesterName,
+    requesterEmail: legacyRequest.requesterEmail,
+  });
 }

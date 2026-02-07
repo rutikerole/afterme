@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { sendTrusteeVerificationEmail } from "@/lib/email";
 import { z } from "zod";
 import crypto from "crypto";
 
@@ -101,9 +102,14 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // TODO: Send verification email to trustee
-    // In production, you would send an email here with a link like:
-    // /api/trustees/verify?token=${verificationToken}
+    // Send verification email to trustee
+    const verificationLink = `${process.env.NEXT_PUBLIC_APP_URL}/api/trustees/verify?token=${verificationToken}`;
+    await sendTrusteeVerificationEmail({
+      trusteeEmail: data.email,
+      trusteeName: data.name,
+      userName: user.name || 'A user',
+      verificationLink,
+    });
 
     return NextResponse.json({ trustee }, { status: 201 });
   } catch (error) {

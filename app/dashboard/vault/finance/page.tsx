@@ -29,31 +29,41 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-type FinanceType = "bank" | "loan" | "investment" | "property" | "credit_card" | "ppf_epf";
+import { toast } from "sonner";
+
+type FinanceType = "bank_account" | "loan" | "investment" | "credit_card" | "crypto" | "other";
 
 interface FinanceRecord {
   id: string;
   type: FinanceType;
   name: string;
-  institution: string;
+  institutionName: string;
   accountNumber?: string;
+  accountNumberMasked?: string;
   balance?: number;
-  loanAmount?: number;
-  emi?: number;
-  interestRate?: number;
-  maturityDate?: string;
-  nominee?: string;
+  currency?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  website?: string;
+  importance?: string;
+  nominees?: Array<{
+    id: string;
+    name: string;
+    relationship: string;
+    sharePercentage?: number;
+  }>;
   notes?: string;
+  createdAt?: string;
 }
 
 // Sage-themed finance types with warm accents
 const financeTypes = [
-  { id: "bank", name: "Bank Account", icon: Building2, accentType: "sage" },
+  { id: "bank_account", name: "Bank Account", icon: Building2, accentType: "sage" },
   { id: "credit_card", name: "Credit Card", icon: CreditCard, accentType: "sage" },
   { id: "loan", name: "Loan / EMI", icon: Home, accentType: "amber" },
   { id: "investment", name: "Investment", icon: TrendingUp, accentType: "sage" },
-  { id: "ppf_epf", name: "PPF / EPF", icon: PiggyBank, accentType: "sage" },
-  { id: "property", name: "Property", icon: Landmark, accentType: "rose" },
+  { id: "crypto", name: "Crypto", icon: PiggyBank, accentType: "sage" },
+  { id: "other", name: "Other", icon: Landmark, accentType: "rose" },
 ];
 
 const getAccentStyles = (accentType: string) => {
@@ -79,37 +89,6 @@ const getAccentStyles = (accentType: string) => {
   }
 };
 
-const initialRecords: FinanceRecord[] = [
-  {
-    id: "1",
-    type: "bank",
-    name: "Savings Account",
-    institution: "HDFC Bank",
-    accountNumber: "XXXX1234",
-    balance: 250000,
-    nominee: "Wife",
-  },
-  {
-    id: "2",
-    type: "loan",
-    name: "Home Loan",
-    institution: "SBI",
-    accountNumber: "HL12345678",
-    loanAmount: 3500000,
-    emi: 32000,
-    interestRate: 8.5,
-    notes: "EMI due on 5th of every month",
-  },
-  {
-    id: "3",
-    type: "investment",
-    name: "Mutual Funds",
-    institution: "Zerodha",
-    balance: 450000,
-    nominee: "Wife",
-    notes: "SIP of 10000/month",
-  },
-];
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -129,7 +108,9 @@ const itemVariants = {
 };
 
 export default function FinancePage() {
-  const [records, setRecords] = useState<FinanceRecord[]>(initialRecords);
+  const [records, setRecords] = useState<FinanceRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedType, setSelectedType] = useState<FinanceType | null>(null);
   const [showNumbers, setShowNumbers] = useState<Record<string, boolean>>({});
@@ -138,7 +119,56 @@ export default function FinancePage() {
 
   useEffect(() => {
     setMounted(true);
+    fetchRecords();
   }, []);
+
+  const fetchRecords = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/vault/finance");
+      if (!res.ok) throw new Error("Failed to fetch");
+      const data = await res.json();
+      setRecords(data.items || []);
+    } catch (error) {
+      console.error("Error fetching finance records:", error);
+      toast.error("Failed to load finance records");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveRecord = async (record: Omit<FinanceRecord, "id">) => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/vault/finance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(record),
+      });
+      if (!res.ok) throw new Error("Failed to save");
+      toast.success("Record saved successfully!");
+      fetchRecords();
+      setShowAddModal(false);
+      setSelectedType(null);
+    } catch (error) {
+      console.error("Error saving record:", error);
+      toast.error("Failed to save record");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteRecord = async (id: string) => {
+    try {
+      const res = await fetch(`/api/vault/finance/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
+      toast.success("Record deleted");
+      setRecords((prev) => prev.filter((r) => r.id !== id));
+    } catch (error) {
+      console.error("Error deleting record:", error);
+      toast.error("Failed to delete record");
+    }
+  };
 
   const toggleNumber = (id: string) => {
     setShowNumbers((prev) => ({ ...prev, [id]: !prev[id] }));

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { sendAccessGrantedEmail } from "@/lib/email";
 import crypto from "crypto";
 
 // POST - Grant access after grace period ends (called by cron or manually)
@@ -78,8 +79,15 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // TODO: Send email to requester with access link
-    // /legacy-access/view?token=${accessToken}
+    // Send email to requester with access link
+    const accessLink = `${process.env.NEXT_PUBLIC_APP_URL}/legacy-access/view?token=${accessToken}`;
+    await sendAccessGrantedEmail({
+      requesterEmail: legacyRequest.requesterEmail,
+      requesterName: legacyRequest.requesterName,
+      userName: legacyRequest.user.name || 'User',
+      accessLink,
+      accessToken,
+    });
 
     return NextResponse.json({
       success: true,

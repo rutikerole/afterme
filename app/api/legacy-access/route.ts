@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { sendLegacyAccessRequestEmail } from "@/lib/email";
 import { z } from "zod";
 import crypto from "crypto";
 
@@ -128,8 +129,16 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        // TODO: Send email to trustee with confirmation link
-        // /legacy-access/trustee-confirm?token=${confirmationToken}
+        // Send email to trustee with confirmation link
+        const confirmationLink = `${process.env.NEXT_PUBLIC_APP_URL}/legacy-access/trustee-confirm?token=${confirmationToken}`;
+        await sendLegacyAccessRequestEmail({
+          trusteeEmail: trustee.email,
+          trusteeName: trustee.name,
+          userName: user.name || 'Unknown',
+          requesterName: data.requesterName,
+          requesterEmail: data.requesterEmail,
+          confirmationLink,
+        });
       }
     }
 

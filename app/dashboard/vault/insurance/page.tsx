@@ -28,20 +28,33 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-type InsuranceType = "health" | "life" | "vehicle" | "home" | "travel" | "other";
+import { toast } from "sonner";
+
+type InsuranceType = "health" | "life" | "auto" | "home" | "travel" | "other";
 
 interface InsurancePolicy {
   id: string;
   type: InsuranceType;
   name: string;
   provider: string;
-  policyNumber: string;
-  sumInsured: number;
-  premium: number;
-  premiumFrequency: "monthly" | "quarterly" | "yearly";
-  startDate: string;
-  expiryDate: string;
-  nominee?: string;
+  policyNumber?: string;
+  policyNumberMasked?: string;
+  coverageAmount?: number;
+  premium?: number;
+  premiumFrequency?: "monthly" | "quarterly" | "annually";
+  startDate?: string;
+  endDate?: string;
+  agentName?: string;
+  agentPhone?: string;
+  agentEmail?: string;
+  isExpiringSoon?: boolean;
+  isExpired?: boolean;
+  nominees?: Array<{
+    id: string;
+    name: string;
+    relationship: string;
+    sharePercentage?: number;
+  }>;
   notes?: string;
 }
 
@@ -49,7 +62,7 @@ interface InsurancePolicy {
 const insuranceTypes = [
   { id: "health", name: "Health Insurance", icon: Heart, accentType: "rose" },
   { id: "life", name: "Life Insurance", icon: Shield, accentType: "sage" },
-  { id: "vehicle", name: "Vehicle Insurance", icon: Car, accentType: "sage" },
+  { id: "auto", name: "Vehicle Insurance", icon: Car, accentType: "sage" },
   { id: "home", name: "Home Insurance", icon: Home, accentType: "amber" },
   { id: "travel", name: "Travel Insurance", icon: Plane, accentType: "sage" },
   { id: "other", name: "Other Insurance", icon: Umbrella, accentType: "sage" },
@@ -78,48 +91,6 @@ const getAccentStyles = (accentType: string) => {
   }
 };
 
-const initialPolicies: InsurancePolicy[] = [
-  {
-    id: "1",
-    type: "health",
-    name: "Family Floater",
-    provider: "Star Health",
-    policyNumber: "SH12345678",
-    sumInsured: 1000000,
-    premium: 25000,
-    premiumFrequency: "yearly",
-    startDate: "2024-01-15",
-    expiryDate: "2025-01-14",
-    nominee: "Self",
-    notes: "Covers spouse and 2 children",
-  },
-  {
-    id: "2",
-    type: "life",
-    name: "Term Plan",
-    provider: "ICICI Prudential",
-    policyNumber: "IP98765432",
-    sumInsured: 10000000,
-    premium: 12000,
-    premiumFrequency: "yearly",
-    startDate: "2020-05-01",
-    expiryDate: "2045-05-01",
-    nominee: "Wife",
-  },
-  {
-    id: "3",
-    type: "vehicle",
-    name: "Car Insurance",
-    provider: "HDFC Ergo",
-    policyNumber: "HE55667788",
-    sumInsured: 800000,
-    premium: 15000,
-    premiumFrequency: "yearly",
-    startDate: "2024-03-01",
-    expiryDate: "2025-02-28",
-    notes: "Comprehensive with zero depreciation",
-  },
-];
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -139,7 +110,9 @@ const itemVariants = {
 };
 
 export default function InsurancePage() {
-  const [policies, setPolicies] = useState<InsurancePolicy[]>(initialPolicies);
+  const [policies, setPolicies] = useState<InsurancePolicy[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedType, setSelectedType] = useState<InsuranceType | null>(null);
   const [activeTab, setActiveTab] = useState<"all" | InsuranceType>("all");
@@ -147,7 +120,56 @@ export default function InsurancePage() {
 
   useEffect(() => {
     setMounted(true);
+    fetchPolicies();
   }, []);
+
+  const fetchPolicies = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/vault/insurance");
+      if (!res.ok) throw new Error("Failed to fetch");
+      const data = await res.json();
+      setPolicies(data.items || []);
+    } catch (error) {
+      console.error("Error fetching policies:", error);
+      toast.error("Failed to load insurance policies");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const savePolicy = async (policy: Omit<InsurancePolicy, "id">) => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/vault/insurance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(policy),
+      });
+      if (!res.ok) throw new Error("Failed to save");
+      toast.success("Policy saved successfully!");
+      fetchPolicies();
+      setShowAddModal(false);
+      setSelectedType(null);
+    } catch (error) {
+      console.error("Error saving policy:", error);
+      toast.error("Failed to save policy");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deletePolicy = async (id: string) => {
+    try {
+      const res = await fetch(`/api/vault/insurance/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
+      toast.success("Policy deleted");
+      setPolicies((prev) => prev.filter((p) => p.id !== id));
+    } catch (error) {
+      console.error("Error deleting policy:", error);
+      toast.error("Failed to delete policy");
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     if (amount >= 10000000) {
