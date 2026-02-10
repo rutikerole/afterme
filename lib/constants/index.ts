@@ -1,4 +1,4 @@
-import { Folder, Lock, Mic, BookOpen, Heart, Users, type LucideIcon } from "lucide-react";
+import { Folder, Lock, Mic, BookOpen, Heart, Users, Mail, Stethoscope, type LucideIcon } from "lucide-react";
 
 // ════════════════════════════════════════════════════════════════════════════
 // PILLAR DEFINITIONS - Central source of truth for all dashboard pillars
@@ -68,6 +68,24 @@ export const PILLARS: Pillar[] = [
     href: "/dashboard/family",
     progress: 50,
     items: 4,
+  },
+  {
+    id: "messages",
+    name: "Future Messages",
+    description: "Schedule heartfelt messages for birthdays, milestones, and special moments.",
+    icon: Mail,
+    href: "/dashboard/messages",
+    progress: 15,
+    items: 2,
+  },
+  {
+    id: "eldercare",
+    name: "Eldercare",
+    description: "Medicine reminders, daily check-ins, and wellness tracking for loved ones.",
+    icon: Stethoscope,
+    href: "/dashboard/eldercare",
+    progress: 30,
+    items: 6,
   },
 ];
 

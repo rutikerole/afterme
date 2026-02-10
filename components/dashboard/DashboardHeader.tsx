@@ -99,10 +99,13 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
 
   const navLinks = [
     { href: "/dashboard", label: "Home" },
-    { href: "/dashboard/voice", label: "Voice Vault" },
+    { href: "/dashboard/voice", label: "Voice" },
     { href: "/dashboard/memories", label: "Memories" },
+    { href: "/dashboard/stories", label: "Stories" },
     { href: "/dashboard/messages", label: "Messages" },
     { href: "/dashboard/family", label: "Family" },
+    { href: "/dashboard/eldercare", label: "Eldercare" },
+    { href: "/dashboard/vault", label: "Vault" },
   ];
 
   return (
@@ -318,6 +321,14 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
                 </Link>
               ))}
               <hr className="my-2 border-sage/10" />
+              <Link
+                href="/dashboard/eldercare"
+                className="flex items-center gap-3 px-4 py-3 text-muted-foreground hover:text-sage-dark hover:bg-sage/10 rounded-xl transition-colors"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-sage" />
+                Eldercare
+              </Link>
               <Link
                 href="/dashboard/vault"
                 className="flex items-center gap-3 px-4 py-3 text-muted-foreground hover:text-sage-dark hover:bg-sage/10 rounded-xl transition-colors"

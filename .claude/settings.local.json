@@ -39,7 +39,8 @@
       "Bash(node test-apis.js:*)",
       "Bash(npx prisma db push:*)",
       "Bash(node:*)",
-      "Bash(npx @sentry/wizard@latest:*)"
+      "Bash(npx @sentry/wizard@latest:*)",
+      "Bash(npx vercel:*)"
     ]
   }
 }
