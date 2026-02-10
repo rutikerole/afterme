@@ -818,9 +818,17 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
               <PillarCard pillar={PILLARS[4]} index={4} />
             </div>
 
-            {/* Third row - full width */}
-            <div className="sm:col-span-2 lg:col-span-3">
+            {/* Third row - 1 + 2 */}
+            <div>
               <PillarCard pillar={PILLARS[5]} index={5} />
+            </div>
+            <div className="sm:col-span-2 lg:col-span-2">
+              <PillarCard pillar={PILLARS[6]} index={6} />
+            </div>
+
+            {/* Fourth row - full width for Eldercare */}
+            <div className="sm:col-span-2 lg:col-span-3">
+              <PillarCard pillar={PILLARS[7]} index={7} />
             </div>
           </div>
         </div>
