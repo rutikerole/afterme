@@ -578,6 +578,59 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
             </motion.div>
           </div>
 
+          {/* ══════════════════════════════════════════════════════════════════
+              QUICK ACCESS BAR - All Pillars
+          ══════════════════════════════════════════════════════════════════ */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="mb-10"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs uppercase tracking-[0.2em] text-sage/70">Quick Access</span>
+              <Link href="#pillars" className="text-xs text-sage hover:text-sage-dark transition-colors">
+                View all →
+              </Link>
+            </div>
+
+            {/* Scrollable Pillar Icons */}
+            <div className="relative">
+              {/* Gradient fade edges for scroll indication */}
+              <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none opacity-0 sm:opacity-100" />
+              <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none opacity-0 sm:opacity-100" />
+
+              <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2 sm:mx-0 sm:px-0 sm:overflow-visible sm:flex-wrap sm:justify-center lg:justify-start">
+                {PILLARS.map((pillar, index) => {
+                  const Icon = pillar.icon;
+                  return (
+                    <Link key={pillar.id} href={pillar.href}>
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.1 * index, duration: 0.3 }}
+                        whileHover={{ scale: 1.05, y: -2 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="relative flex flex-col items-center gap-2 p-3 sm:p-4 min-w-18 sm:min-w-20 rounded-2xl bg-white/70 hover:bg-white border border-sage/20 hover:border-sage/40 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                      >
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-sage/10 group-hover:bg-sage/20 flex items-center justify-center transition-colors">
+                          <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-sage group-hover:text-sage-dark transition-colors" />
+                        </div>
+                        <span className="text-[10px] sm:text-xs font-medium text-foreground/70 group-hover:text-foreground text-center whitespace-nowrap transition-colors">
+                          {pillar.name.split(' ')[0]}
+                        </span>
+                        {/* Progress indicator dot */}
+                        {pillar.progress > 0 && (
+                          <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-sage" />
+                        )}
+                      </motion.div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
+
           {/* Recent Activity & Insights */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -779,7 +832,7 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
       {/* ══════════════════════════════════════════════════════════════════
           SECTION 3: PILLARS (ARTISTIC LAYOUT)
       ══════════════════════════════════════════════════════════════════ */}
-      <section className="px-6 py-16">
+      <section id="pillars" className="px-6 py-16 scroll-mt-20">
         <div className="max-w-6xl mx-auto">
           {/* Section header */}
           <motion.div

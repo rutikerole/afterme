@@ -903,6 +903,15 @@ body {
   scrollbar-color: hsl(var(--sage) / 0.3) hsl(var(--muted) / 0.5);
 }
 
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* ========================================
    GLASSMORPHISM EFFECTS
    ======================================== */
