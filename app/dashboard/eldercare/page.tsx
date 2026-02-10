@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
 import {
   Heart,
   Phone,
@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   Clock,
   Shield,
-  MessageCircle,
   Smile,
   Meh,
   Frown,
@@ -18,15 +17,10 @@ import {
   Moon,
   Bell,
   Plus,
-  Edit2,
   Trash2,
-  X,
   Activity,
-  Users,
-  Calendar,
   Mic,
-  Volume2,
-  Send,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,9 +38,12 @@ interface MedicineReminder {
 interface CheckIn {
   id: string;
   date: string;
-  time: string;
   mood: "good" | "okay" | "not_good";
   note?: string;
+  bloodPressure?: string;
+  heartRate?: number;
+  temperature?: number;
+  weight?: number;
 }
 
 interface ScamAlert {
@@ -56,39 +53,6 @@ interface ScamAlert {
   date: string;
   isRead: boolean;
 }
-
-const initialMedicines: MedicineReminder[] = [
-  {
-    id: "1",
-    name: "Blood Pressure Medicine",
-    dosage: "1 tablet",
-    times: ["08:00", "20:00"],
-    notes: "Take with food",
-    takenToday: [true, false],
-  },
-  {
-    id: "2",
-    name: "Vitamin D",
-    dosage: "1 capsule",
-    times: ["09:00"],
-    takenToday: [true],
-  },
-  {
-    id: "3",
-    name: "Calcium",
-    dosage: "1 tablet",
-    times: ["21:00"],
-    notes: "Take before bed",
-    takenToday: [false],
-  },
-];
-
-const initialCheckIns: CheckIn[] = [
-  { id: "1", date: "2025-01-14", time: "08:30", mood: "good", note: "Feeling energetic today!" },
-  { id: "2", date: "2025-01-13", time: "09:00", mood: "okay" },
-  { id: "3", date: "2025-01-12", time: "08:45", mood: "good", note: "Had a nice walk" },
-  { id: "4", date: "2025-01-11", time: "10:00", mood: "not_good", note: "Knee pain" },
-];
 
 const scamAlerts: ScamAlert[] = [
   {
@@ -108,12 +72,53 @@ const scamAlerts: ScamAlert[] = [
 ];
 
 export default function ElderCarePage() {
-  const [medicines, setMedicines] = useState<MedicineReminder[]>(initialMedicines);
-  const [checkIns, setCheckIns] = useState<CheckIn[]>(initialCheckIns);
+  const [medicines, setMedicines] = useState<MedicineReminder[]>([]);
+  const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [showAddMedicine, setShowAddMedicine] = useState(false);
-  const [showCheckIn, setShowCheckIn] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeTab, setActiveTab] = useState<"overview" | "medicine" | "checkins" | "alerts">("overview");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [stats, setStats] = useState({ checkedInToday: false, todayCheckIn: null as CheckIn | null });
+
+  const [newMedicine, setNewMedicine] = useState({
+    name: "",
+    dosage: "",
+    times: ["08:00"],
+    notes: "",
+  });
+
+  // Fetch data
+  const fetchData = useCallback(async () => {
+    try {
+      const [medicineRes, checkInRes] = await Promise.all([
+        fetch("/api/eldercare/medicine"),
+        fetch("/api/eldercare/checkin"),
+      ]);
+
+      if (medicineRes.ok) {
+        const medicineData = await medicineRes.json();
+        setMedicines(medicineData.medicines || []);
+      }
+
+      if (checkInRes.ok) {
+        const checkInData = await checkInRes.json();
+        setCheckIns(checkInData.checkIns || []);
+        setStats({
+          checkedInToday: checkInData.stats?.checkedInToday || false,
+          todayCheckIn: checkInData.stats?.todayCheckIn || null,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -123,8 +128,6 @@ export default function ElderCarePage() {
   const greeting = currentTime.getHours() < 12 ? "Good Morning" : currentTime.getHours() < 17 ? "Good Afternoon" : "Good Evening";
   const GreeingIcon = currentTime.getHours() < 17 ? Sun : Moon;
 
-  const todayCheckIn = checkIns.find((c) => c.date === new Date().toISOString().split("T")[0]);
-  const pendingMedicines = medicines.filter((m) => m.takenToday.includes(false)).length;
   const weekMoods = checkIns.slice(0, 7);
   const goodMoodDays = weekMoods.filter((c) => c.mood === "good").length;
 
@@ -138,6 +141,85 @@ export default function ElderCarePage() {
         return <Frown className="w-5 h-5 text-red-500" />;
     }
   };
+
+  const handleQuickCheckIn = async (mood: "good" | "okay" | "not_good") => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/eldercare/checkin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mood }),
+      });
+
+      if (res.ok) {
+        fetchData();
+      }
+    } catch (error) {
+      console.error("Error creating check-in:", error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddMedicine = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await fetch("/api/eldercare/medicine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newMedicine),
+      });
+
+      if (res.ok) {
+        setShowAddMedicine(false);
+        setNewMedicine({ name: "", dosage: "", times: ["08:00"], notes: "" });
+        fetchData();
+      }
+    } catch (error) {
+      console.error("Error adding medicine:", error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteMedicine = async (id: string) => {
+    try {
+      const res = await fetch(`/api/eldercare/medicine/${id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        fetchData();
+      }
+    } catch (error) {
+      console.error("Error deleting medicine:", error);
+    }
+  };
+
+  const handleLogMedicine = async (medicineId: string, timeSlot: string, taken: boolean) => {
+    try {
+      const res = await fetch(`/api/eldercare/medicine/${medicineId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ timeSlot, taken }),
+      });
+
+      if (res.ok) {
+        fetchData();
+      }
+    } catch (error) {
+      console.error("Error logging medicine:", error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 p-6">
@@ -155,29 +237,20 @@ export default function ElderCarePage() {
           <p className="text-white/80 text-lg">How are you feeling today?</p>
 
           {/* Quick Check-in */}
-          {!todayCheckIn ? (
+          {!stats.checkedInToday ? (
             <div className="mt-6">
               <p className="text-sm text-white/70 mb-3">Quick check-in:</p>
               <div className="flex gap-3">
                 {[
-                  { mood: "good", icon: Smile, label: "Good" },
-                  { mood: "okay", icon: Meh, label: "Okay" },
-                  { mood: "not_good", icon: Frown, label: "Not Great" },
+                  { mood: "good" as const, icon: Smile, label: "Good" },
+                  { mood: "okay" as const, icon: Meh, label: "Okay" },
+                  { mood: "not_good" as const, icon: Frown, label: "Not Great" },
                 ].map(({ mood, icon: Icon, label }) => (
                   <button
                     key={mood}
-                    onClick={() => {
-                      setCheckIns((prev) => [
-                        {
-                          id: Date.now().toString(),
-                          date: new Date().toISOString().split("T")[0],
-                          time: new Date().toTimeString().slice(0, 5),
-                          mood: mood as CheckIn["mood"],
-                        },
-                        ...prev,
-                      ]);
-                    }}
-                    className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur transition-all"
+                    onClick={() => handleQuickCheckIn(mood)}
+                    disabled={saving}
+                    className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur transition-all disabled:opacity-50"
                   >
                     <Icon className="w-6 h-6" />
                     <span className="font-medium">{label}</span>
@@ -187,10 +260,10 @@ export default function ElderCarePage() {
             </div>
           ) : (
             <div className="mt-6 flex items-center gap-3 px-4 py-3 rounded-xl bg-white/20 w-fit">
-              {getMoodIcon(todayCheckIn.mood)}
+              {stats.todayCheckIn && getMoodIcon(stats.todayCheckIn.mood)}
               <span>
-                You checked in at {todayCheckIn.time} - Feeling{" "}
-                {todayCheckIn.mood === "good" ? "good" : todayCheckIn.mood === "okay" ? "okay" : "not great"}
+                You checked in today - Feeling{" "}
+                {stats.todayCheckIn?.mood === "good" ? "good" : stats.todayCheckIn?.mood === "okay" ? "okay" : "not great"}
               </span>
               <CheckCircle2 className="w-5 h-5" />
             </div>
@@ -228,8 +301,8 @@ export default function ElderCarePage() {
               <Activity className="w-5 h-5 text-blue-500" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Check-in Streak</p>
-              <p className="text-2xl font-bold">{checkIns.length} days</p>
+              <p className="text-sm text-muted-foreground">Total Check-ins</p>
+              <p className="text-2xl font-bold">{checkIns.length}</p>
             </div>
           </div>
         </div>
@@ -306,28 +379,32 @@ export default function ElderCarePage() {
               </Button>
             </div>
             <div className="space-y-3">
-              {medicines.slice(0, 3).map((medicine) => (
-                <div key={medicine.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/50">
-                  <div>
-                    <p className="font-medium">{medicine.name}</p>
-                    <p className="text-sm text-muted-foreground">{medicine.dosage}</p>
+              {medicines.length === 0 ? (
+                <p className="text-muted-foreground text-sm">No medicines added yet</p>
+              ) : (
+                medicines.slice(0, 3).map((medicine) => (
+                  <div key={medicine.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/50">
+                    <div>
+                      <p className="font-medium">{medicine.name}</p>
+                      <p className="text-sm text-muted-foreground">{medicine.dosage}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      {medicine.times.map((time, i) => (
+                        <span
+                          key={i}
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            medicine.takenToday[i]
+                              ? "bg-emerald-500/10 text-emerald-600"
+                              : "bg-amber-500/10 text-amber-600"
+                          }`}
+                        >
+                          {time} {medicine.takenToday[i] ? "✓" : "○"}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    {medicine.times.map((time, i) => (
-                      <span
-                        key={i}
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          medicine.takenToday[i]
-                            ? "bg-emerald-500/10 text-emerald-600"
-                            : "bg-amber-500/10 text-amber-600"
-                        }`}
-                      >
-                        {time} {medicine.takenToday[i] ? "✓" : "○"}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
@@ -340,16 +417,20 @@ export default function ElderCarePage() {
               </h3>
             </div>
             <div className="flex justify-between">
-              {weekMoods.slice(0, 7).reverse().map((checkIn, i) => (
-                <div key={i} className="text-center">
-                  <div className="w-10 h-10 mx-auto rounded-full bg-muted flex items-center justify-center mb-1">
-                    {getMoodIcon(checkIn.mood)}
+              {weekMoods.length === 0 ? (
+                <p className="text-muted-foreground text-sm">No check-ins yet this week</p>
+              ) : (
+                weekMoods.slice(0, 7).reverse().map((checkIn, i) => (
+                  <div key={i} className="text-center">
+                    <div className="w-10 h-10 mx-auto rounded-full bg-muted flex items-center justify-center mb-1">
+                      {getMoodIcon(checkIn.mood)}
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(checkIn.date).toLocaleDateString("en", { weekday: "short" })}
+                    </span>
                   </div>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(checkIn.date).toLocaleDateString("en", { weekday: "short" })}
-                  </span>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
@@ -360,19 +441,6 @@ export default function ElderCarePage() {
               Emergency
             </h3>
             <div className="space-y-3">
-              <a
-                href="tel:+919876543210"
-                className="flex items-center justify-between p-4 rounded-xl bg-white border border-red-500/20 hover:bg-red-50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <Phone className="w-5 h-5 text-red-500" />
-                  <div>
-                    <p className="font-semibold">Call Family</p>
-                    <p className="text-sm text-muted-foreground">Priya (Wife)</p>
-                  </div>
-                </div>
-                <Button className="bg-red-500 hover:bg-red-600">Call Now</Button>
-              </a>
               <a
                 href="tel:112"
                 className="flex items-center justify-between p-4 rounded-xl bg-white border border-red-500/20 hover:bg-red-50 transition-colors"
@@ -425,67 +493,129 @@ export default function ElderCarePage() {
             </Button>
           </div>
 
-          <div className="space-y-4">
-            {medicines.map((medicine, index) => (
-              <motion.div
-                key={medicine.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="p-6 rounded-2xl border border-border bg-card"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 rounded-xl bg-emerald-500/10">
-                      <Pill className="w-6 h-6 text-emerald-500" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-lg">{medicine.name}</h3>
-                      <p className="text-muted-foreground">{medicine.dosage}</p>
-                      {medicine.notes && (
-                        <p className="text-sm text-muted-foreground mt-1">📝 {medicine.notes}</p>
-                      )}
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm" className="text-red-500">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+          {/* Add Medicine Form */}
+          {showAddMedicine && (
+            <motion.form
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              onSubmit={handleAddMedicine}
+              className="p-6 rounded-2xl border border-border bg-card space-y-4"
+            >
+              <h3 className="font-semibold">Add New Medicine</h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Medicine Name</Label>
+                  <Input
+                    id="name"
+                    value={newMedicine.name}
+                    onChange={(e) => setNewMedicine({ ...newMedicine, name: e.target.value })}
+                    placeholder="e.g., Blood Pressure Medicine"
+                    required
+                  />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dosage">Dosage</Label>
+                  <Input
+                    id="dosage"
+                    value={newMedicine.dosage}
+                    onChange={(e) => setNewMedicine({ ...newMedicine, dosage: e.target.value })}
+                    placeholder="e.g., 1 tablet"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Times (comma separated)</Label>
+                <Input
+                  value={newMedicine.times.join(", ")}
+                  onChange={(e) => setNewMedicine({ ...newMedicine, times: e.target.value.split(",").map((t) => t.trim()) })}
+                  placeholder="e.g., 08:00, 20:00"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notes (optional)</Label>
+                <Input
+                  id="notes"
+                  value={newMedicine.notes}
+                  onChange={(e) => setNewMedicine({ ...newMedicine, notes: e.target.value })}
+                  placeholder="e.g., Take with food"
+                />
+              </div>
+              <div className="flex gap-3">
+                <Button type="button" variant="outline" onClick={() => setShowAddMedicine(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={saving}>
+                  {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                  Save Medicine
+                </Button>
+              </div>
+            </motion.form>
+          )}
 
-                <div className="mt-4 flex gap-3">
-                  {medicine.times.map((time, i) => (
-                    <button
-                      key={i}
-                      onClick={() => {
-                        setMedicines((prev) =>
-                          prev.map((m) =>
-                            m.id === medicine.id
-                              ? {
-                                  ...m,
-                                  takenToday: m.takenToday.map((t, idx) => (idx === i ? !t : t)),
-                                }
-                              : m
-                          )
-                        );
-                      }}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${
-                        medicine.takenToday[i]
-                          ? "border-emerald-500 bg-emerald-500/10 text-emerald-600"
-                          : "border-border hover:border-primary"
-                      }`}
+          <div className="space-y-4">
+            {medicines.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Pill className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No medicines added yet. Add your first medicine to start tracking.</p>
+              </div>
+            ) : (
+              medicines.map((medicine, index) => (
+                <motion.div
+                  key={medicine.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="p-6 rounded-2xl border border-border bg-card"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 rounded-xl bg-emerald-500/10">
+                        <Pill className="w-6 h-6 text-emerald-500" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg">{medicine.name}</h3>
+                        <p className="text-muted-foreground">{medicine.dosage}</p>
+                        {medicine.notes && (
+                          <p className="text-sm text-muted-foreground mt-1">📝 {medicine.notes}</p>
+                        )}
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-500"
+                      onClick={() => handleDeleteMedicine(medicine.id)}
                     >
-                      <Clock className="w-4 h-4" />
-                      {time}
-                      {medicine.takenToday[i] ? (
-                        <CheckCircle2 className="w-4 h-4" />
-                      ) : (
-                        <span className="w-4 h-4 rounded-full border-2 border-current" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            ))}
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  <div className="mt-4 flex gap-3">
+                    {medicine.times.map((time, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleLogMedicine(medicine.id, time, !medicine.takenToday[i])}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${
+                          medicine.takenToday[i]
+                            ? "border-emerald-500 bg-emerald-500/10 text-emerald-600"
+                            : "border-border hover:border-primary"
+                        }`}
+                      >
+                        <Clock className="w-4 h-4" />
+                        {time}
+                        {medicine.takenToday[i] ? (
+                          <CheckCircle2 className="w-4 h-4" />
+                        ) : (
+                          <span className="w-4 h-4 rounded-full border-2 border-current" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              ))
+            )}
           </div>
         </motion.div>
       )}
@@ -495,50 +625,52 @@ export default function ElderCarePage() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Check-in History</h2>
-            <Button onClick={() => setShowCheckIn(true)} variant="outline" className="gap-2">
-              <Plus className="w-4 h-4" />
-              Add Note
-            </Button>
           </div>
 
           <div className="space-y-3">
-            {checkIns.map((checkIn, index) => (
-              <motion.div
-                key={checkIn.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card"
-              >
-                <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                    checkIn.mood === "good"
-                      ? "bg-emerald-500/10"
-                      : checkIn.mood === "okay"
-                      ? "bg-amber-500/10"
-                      : "bg-red-500/10"
-                  }`}
+            {checkIns.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Activity className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No check-ins yet. Use the quick check-in above to get started.</p>
+              </div>
+            ) : (
+              checkIns.map((checkIn, index) => (
+                <motion.div
+                  key={checkIn.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card"
                 >
-                  {getMoodIcon(checkIn.mood)}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium capitalize">
-                      {checkIn.mood === "not_good" ? "Not Great" : checkIn.mood}
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      {new Date(checkIn.date).toLocaleDateString("en", {
-                        weekday: "long",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </span>
-                    <span className="text-sm text-muted-foreground">at {checkIn.time}</span>
+                  <div
+                    className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                      checkIn.mood === "good"
+                        ? "bg-emerald-500/10"
+                        : checkIn.mood === "okay"
+                        ? "bg-amber-500/10"
+                        : "bg-red-500/10"
+                    }`}
+                  >
+                    {getMoodIcon(checkIn.mood)}
                   </div>
-                  {checkIn.note && <p className="text-sm text-muted-foreground mt-1">{checkIn.note}</p>}
-                </div>
-              </motion.div>
-            ))}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium capitalize">
+                        {checkIn.mood === "not_good" ? "Not Great" : checkIn.mood}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(checkIn.date).toLocaleDateString("en", {
+                          weekday: "long",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </span>
+                    </div>
+                    {checkIn.note && <p className="text-sm text-muted-foreground mt-1">{checkIn.note}</p>}
+                  </div>
+                </motion.div>
+              ))
+            )}
           </div>
         </motion.div>
       )}

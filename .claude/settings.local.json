@@ -34,7 +34,12 @@
       "Bash(dir:*)",
       "Bash(npx tsx:*)",
       "Bash(npx next build)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(curl:*)",
+      "Bash(node test-apis.js:*)",
+      "Bash(npx prisma db push:*)",
+      "Bash(node:*)",
+      "Bash(npx @sentry/wizard@latest:*)"
     ]
   }
 }

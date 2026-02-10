@@ -832,3 +832,98 @@ model AuditLog {
   @@index([createdAt])
   @@map("audit_logs")
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// ELDERCARE - MEDICINE REMINDERS & CHECK-INS
+// ════════════════════════════════════════════════════════════════════════════
+
+model MedicineReminder {
+  id              String    @id @default(cuid())
+  userId          String
+
+  name            String
+  dosage          String
+  times           String[]  // Array of times like ["08:00", "20:00"]
+  notes           String?
+
+  // Tracking
+  isActive        Boolean   @default(true)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  logs            MedicineLog[]
+
+  @@index([userId])
+  @@map("medicine_reminders")
+}
+
+model MedicineLog {
+  id              String           @id @default(cuid())
+  reminderId      String
+  reminder        MedicineReminder @relation(fields: [reminderId], references: [id], onDelete: Cascade)
+
+  date            DateTime         @default(now())
+  timeSlot        String           // Which time slot was taken
+  taken           Boolean          @default(true)
+
+  createdAt       DateTime         @default(now())
+
+  @@index([reminderId])
+  @@index([date])
+  @@map("medicine_logs")
+}
+
+model DailyCheckIn {
+  id              String    @id @default(cuid())
+  userId          String
+
+  date            DateTime  @default(now())
+  mood            String    // good, okay, not_good
+  note            String?
+
+  // Health metrics (optional)
+  bloodPressure   String?
+  heartRate       Int?
+  temperature     Decimal?
+  weight          Decimal?
+
+  createdAt       DateTime  @default(now())
+
+  @@index([userId])
+  @@index([date])
+  @@map("daily_checkins")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SCHEDULED MESSAGES - FUTURE MESSAGES FOR LOVED ONES
+// ════════════════════════════════════════════════════════════════════════════
+
+model ScheduledMessage {
+  id              String    @id @default(cuid())
+  userId          String
+
+  title           String
+  content         String
+
+  // Recipient
+  recipientName   String
+  recipientEmail  String
+
+  // Scheduling
+  scheduledDate   DateTime
+  occasion        String    // birthday, wedding, graduation, holiday, milestone, other
+
+  // Status
+  status          String    @default("scheduled") // scheduled, sent, draft, cancelled
+  sentAt          DateTime?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([scheduledDate])
+  @@index([status])
+  @@map("scheduled_messages")
+}

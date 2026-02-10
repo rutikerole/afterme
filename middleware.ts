@@ -14,6 +14,59 @@ const protectedRoutes = ["/dashboard"];
 const authRoutes = ["/auth/login", "/auth/register"];
 
 // =============================================================================
+// SECURITY HEADERS
+// =============================================================================
+
+function addSecurityHeaders(response: NextResponse): NextResponse {
+  const headers = response.headers;
+
+  // Prevent clickjacking
+  headers.set("X-Frame-Options", "DENY");
+
+  // Prevent MIME type sniffing
+  headers.set("X-Content-Type-Options", "nosniff");
+
+  // Enable XSS filter
+  headers.set("X-XSS-Protection", "1; mode=block");
+
+  // Referrer policy
+  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+
+  // Permissions policy (disable unused browser features)
+  headers.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(self), geolocation=(), interest-cohort=()"
+  );
+
+  // Content Security Policy
+  const cspDirectives = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "img-src 'self' data: blob: https://res.cloudinary.com https://*.cloudinary.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "connect-src 'self' https://res.cloudinary.com https://*.cloudinary.com https://*.sentry.io wss:",
+    "media-src 'self' https://res.cloudinary.com https://*.cloudinary.com blob:",
+    "object-src 'none'",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    "base-uri 'self'",
+  ];
+
+  // Only set strict CSP in production
+  if (process.env.NODE_ENV === "production") {
+    headers.set("Content-Security-Policy", cspDirectives.join("; "));
+    // Strict Transport Security (HTTPS only)
+    headers.set(
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains; preload"
+    );
+  }
+
+  return response;
+}
+
+// =============================================================================
 // MIDDLEWARE
 // =============================================================================
 
@@ -36,15 +89,19 @@ export function middleware(request: NextRequest) {
   if (isProtectedRoute && !isAuthenticated) {
     const loginUrl = new URL("/auth/login", request.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(loginUrl);
+    const response = NextResponse.redirect(loginUrl);
+    return addSecurityHeaders(response);
   }
 
   // Redirect authenticated users away from auth routes
   if (isAuthRoute && isAuthenticated) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    const response = NextResponse.redirect(new URL("/dashboard", request.url));
+    return addSecurityHeaders(response);
   }
 
-  return NextResponse.next();
+  // Add security headers to all responses
+  const response = NextResponse.next();
+  return addSecurityHeaders(response);
 }
 
 // =============================================================================

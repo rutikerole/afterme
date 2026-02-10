@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Phone,
@@ -9,7 +9,6 @@ import {
   Heart,
   Stethoscope,
   Scale,
-  Shield,
   Building2,
   Star,
   Edit2,
@@ -24,25 +23,34 @@ import {
   MapPin,
   Mail,
   MessageSquare,
-  Sparkles,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-type ContactCategory = "family" | "medical" | "legal" | "financial" | "neighbor" | "other";
-
 interface EmergencyContact {
+  id: string;
+  familyMemberId: string;
+  name: string;
+  relationship: string;
+  email: string | null;
+  phone: string | null;
+  avatar: string | null;
+  priority: number;
+  medicalNotes: string | null;
+  bloodType: string | null;
+  allergies: string[];
+  medications: string[];
+  instructions: string | null;
+}
+
+interface AvailableFamilyMember {
   id: string;
   name: string;
   relationship: string;
-  category: ContactCategory;
-  phone: string;
-  alternatePhone?: string;
-  email?: string;
-  address?: string;
-  isPrimary: boolean;
-  notes?: string;
+  email: string | null;
+  phone: string | null;
 }
 
 const categoryTypes = [
@@ -52,30 +60,6 @@ const categoryTypes = [
   { id: "financial", name: "Financial", icon: Building2, accent: "text-sage", bgAccent: "bg-sage-light/30", borderAccent: "border-sage/20" },
   { id: "neighbor", name: "Neighbor/Friend", icon: User, accent: "text-warm-gray", bgAccent: "bg-secondary", borderAccent: "border-border" },
   { id: "other", name: "Other", icon: Phone, accent: "text-muted-foreground", bgAccent: "bg-muted", borderAccent: "border-border" },
-];
-
-const initialContacts: EmergencyContact[] = [
-  {
-    id: "1",
-    name: "Priya Sharma",
-    relationship: "Wife",
-    category: "family",
-    phone: "+91 98765 43210",
-    email: "priya@email.com",
-    isPrimary: true,
-    notes: "First person to contact in any emergency",
-  },
-  {
-    id: "2",
-    name: "Dr. Rajesh Kumar",
-    relationship: "Family Doctor",
-    category: "medical",
-    phone: "+91 98765 12345",
-    alternatePhone: "+91 22 2345 6789",
-    address: "Apollo Hospital, Andheri",
-    isPrimary: false,
-    notes: "Available 24/7 for emergencies",
-  },
 ];
 
 const containerVariants = {
@@ -92,14 +76,49 @@ const itemVariants = {
 };
 
 export default function EmergencyPage() {
-  const [contacts, setContacts] = useState<EmergencyContact[]>(initialContacts);
+  const [contacts, setContacts] = useState<EmergencyContact[]>([]);
+  const [availableFamilyMembers, setAvailableFamilyMembers] = useState<AvailableFamilyMember[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<ContactCategory | null>(null);
   const [copiedPhone, setCopiedPhone] = useState<string | null>(null);
-  const [filterCategory, setFilterCategory] = useState<ContactCategory | "all">("all");
+  const [loading, setLoading] = useState(true);
 
-  const getCategoryInfo = (category: ContactCategory) => {
-    return categoryTypes.find((c) => c.id === category) || categoryTypes[5];
+  const fetchContacts = useCallback(async () => {
+    try {
+      const res = await fetch("/api/emergency");
+      if (res.ok) {
+        const data = await res.json();
+        setContacts(data.contacts || []);
+        setAvailableFamilyMembers(data.availableFamilyMembers || []);
+      }
+    } catch (error) {
+      console.error("Error fetching contacts:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchContacts();
+  }, [fetchContacts]);
+
+  const getCategoryInfo = (relationship: string) => {
+    const lower = relationship.toLowerCase();
+    if (lower.includes("wife") || lower.includes("husband") || lower.includes("son") || lower.includes("daughter") || lower.includes("mother") || lower.includes("father") || lower.includes("brother") || lower.includes("sister")) {
+      return categoryTypes[0]; // Family
+    }
+    if (lower.includes("doctor") || lower.includes("nurse") || lower.includes("hospital")) {
+      return categoryTypes[1]; // Medical
+    }
+    if (lower.includes("lawyer") || lower.includes("attorney")) {
+      return categoryTypes[2]; // Legal
+    }
+    if (lower.includes("accountant") || lower.includes("financial") || lower.includes("bank")) {
+      return categoryTypes[3]; // Financial
+    }
+    if (lower.includes("neighbor") || lower.includes("friend")) {
+      return categoryTypes[4]; // Neighbor/Friend
+    }
+    return categoryTypes[5]; // Other
   };
 
   const copyPhone = async (phone: string) => {
@@ -108,24 +127,29 @@ export default function EmergencyPage() {
     setTimeout(() => setCopiedPhone(null), 2000);
   };
 
-  const setPrimaryContact = (id: string) => {
-    setContacts((prev) =>
-      prev.map((c) => ({
-        ...c,
-        isPrimary: c.id === id,
-      }))
-    );
+  const deleteContact = async (id: string) => {
+    try {
+      const res = await fetch(`/api/emergency/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        fetchContacts();
+      }
+    } catch (error) {
+      console.error("Error deleting contact:", error);
+    }
   };
 
-  const primaryContact = contacts.find((c) => c.isPrimary);
-  const missingCategories = categoryTypes.filter(
-    (cat) => !contacts.some((c) => c.category === cat.id)
-  );
-  const categoriesCovered = categoryTypes.length - missingCategories.length;
+  const primaryContact = contacts.find((c) => c.priority === 1);
+  const categoriesCovered = new Set(contacts.map((c) => getCategoryInfo(c.relationship).id)).size;
 
-  const filteredContacts = filterCategory === "all"
-    ? contacts
-    : contacts.filter(c => c.category === filterCategory);
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-sage" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen relative">
@@ -133,17 +157,6 @@ export default function EmergencyPage() {
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-1/4 w-[400px] h-[400px] bg-sage/10 rounded-full blur-[100px]" />
         <div className="absolute bottom-1/4 left-1/4 w-[300px] h-[300px] bg-sage-light/20 rounded-full blur-[80px]" />
-
-        {/* Decorative lines */}
-        <svg className="absolute top-0 left-0 w-full h-full opacity-[0.08]" viewBox="0 0 1200 800" preserveAspectRatio="none">
-          <path d="M0,100 Q300,50 600,100 T1200,100" fill="none" stroke="hsl(var(--sage))" strokeWidth="1" />
-          <path d="M0,300 Q400,250 800,300 T1200,300" fill="none" stroke="hsl(var(--sage))" strokeWidth="0.5" strokeDasharray="5,5" />
-        </svg>
-
-        {/* Floating dots */}
-        <div className="absolute top-1/4 left-1/5 w-2 h-2 bg-sage/30 rounded-full animate-float" />
-        <div className="absolute top-1/3 right-1/4 w-3 h-3 bg-sage/20 rounded-full animate-float" style={{ animationDelay: "1s" }} />
-        <div className="absolute bottom-1/3 left-1/3 w-2 h-2 bg-sage/25 rounded-full animate-float" style={{ animationDelay: "2s" }} />
       </div>
 
       {/* Header Section */}
@@ -236,11 +249,6 @@ export default function EmergencyPage() {
           transition={{ delay: 0.2 }}
           className="relative overflow-hidden p-8 rounded-3xl bg-gradient-to-br from-sage/10 via-sage-light/20 to-transparent border border-sage/30 mb-10"
         >
-          {/* Decorative elements */}
-          <svg className="absolute top-4 right-4 w-24 h-24 text-sage/10 animate-spin-slow" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="0.5" strokeDasharray="4 4" />
-          </svg>
-
           <div className="relative z-10">
             <div className="flex items-start justify-between">
               <div className="flex items-start gap-5">
@@ -258,30 +266,34 @@ export default function EmergencyPage() {
                   <p className="text-muted-foreground">{primaryContact.relationship}</p>
                 </div>
               </div>
-              <motion.a
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                href={`tel:${primaryContact.phone.replace(/\s/g, "")}`}
-                className="px-6 py-3 rounded-xl bg-sage hover:bg-sage-dark text-white font-medium shadow-lg shadow-sage/20 transition-all flex items-center gap-2"
-              >
-                <PhoneCall className="w-5 h-5" />
-                Call Now
-              </motion.a>
+              {primaryContact.phone && (
+                <motion.a
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  href={`tel:${primaryContact.phone.replace(/\s/g, "")}`}
+                  className="px-6 py-3 rounded-xl bg-sage hover:bg-sage-dark text-white font-medium shadow-lg shadow-sage/20 transition-all flex items-center gap-2"
+                >
+                  <PhoneCall className="w-5 h-5" />
+                  Call Now
+                </motion.a>
+              )}
             </div>
 
             <div className="mt-6 flex items-center gap-6 flex-wrap">
-              <button
-                onClick={() => copyPhone(primaryContact.phone)}
-                className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/50 border border-sage/20 hover:border-sage/40 transition-all"
-              >
-                <Phone className="w-4 h-4 text-sage" />
-                <span className="text-foreground">{primaryContact.phone}</span>
-                {copiedPhone === primaryContact.phone ? (
-                  <CheckCircle2 className="w-4 h-4 text-sage" />
-                ) : (
-                  <Copy className="w-4 h-4 text-muted-foreground" />
-                )}
-              </button>
+              {primaryContact.phone && (
+                <button
+                  onClick={() => copyPhone(primaryContact.phone!)}
+                  className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/50 border border-sage/20 hover:border-sage/40 transition-all"
+                >
+                  <Phone className="w-4 h-4 text-sage" />
+                  <span className="text-foreground">{primaryContact.phone}</span>
+                  {copiedPhone === primaryContact.phone ? (
+                    <CheckCircle2 className="w-4 h-4 text-sage" />
+                  ) : (
+                    <Copy className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </button>
+              )}
               {primaryContact.email && (
                 <a
                   href={`mailto:${primaryContact.email}`}
@@ -294,18 +306,18 @@ export default function EmergencyPage() {
               )}
             </div>
 
-            {primaryContact.notes && (
+            {primaryContact.instructions && (
               <div className="mt-4 flex items-center gap-2 text-muted-foreground text-sm">
                 <MessageSquare className="w-4 h-4 text-sage" />
-                {primaryContact.notes}
+                {primaryContact.instructions}
               </div>
             )}
           </div>
         </motion.div>
       )}
 
-      {/* Missing Categories Warning */}
-      {missingCategories.length > 0 && (
+      {/* Warning if no contacts */}
+      {contacts.length === 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -317,56 +329,14 @@ export default function EmergencyPage() {
               <AlertTriangle className="w-5 h-5 text-amber-700" />
             </div>
             <div>
-              <p className="font-medium text-amber-800">Incomplete emergency network</p>
+              <p className="font-medium text-amber-800">No emergency contacts set up</p>
               <p className="text-sm text-amber-700/80 mt-1">
-                Consider adding contacts for:{" "}
-                <span className="font-medium">{missingCategories.map((c) => c.name).join(", ")}</span>
+                Add emergency contacts to ensure your family members can reach out in critical situations.
               </p>
             </div>
           </div>
         </motion.div>
       )}
-
-      {/* Category Filter */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="flex items-center gap-2 overflow-x-auto pb-2 mb-8"
-      >
-        <button
-          onClick={() => setFilterCategory("all")}
-          className={`px-4 py-2 rounded-full font-medium whitespace-nowrap transition-all ${
-            filterCategory === "all"
-              ? "bg-sage text-white shadow-lg shadow-sage/20"
-              : "bg-white/60 border border-sage/20 text-muted-foreground hover:border-sage/40"
-          }`}
-        >
-          All Contacts
-        </button>
-        {categoryTypes.map((cat) => {
-          const Icon = cat.icon;
-          const count = contacts.filter(c => c.category === cat.id).length;
-          if (count === 0) return null;
-          return (
-            <button
-              key={cat.id}
-              onClick={() => setFilterCategory(cat.id as ContactCategory)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium whitespace-nowrap transition-all ${
-                filterCategory === cat.id
-                  ? "bg-sage text-white shadow-lg shadow-sage/20"
-                  : "bg-white/60 border border-sage/20 text-muted-foreground hover:border-sage/40"
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {cat.name}
-              <span className={`px-1.5 py-0.5 rounded-full text-xs ${
-                filterCategory === cat.id ? "bg-white/20" : "bg-sage/10"
-              }`}>{count}</span>
-            </button>
-          );
-        })}
-      </motion.div>
 
       {/* Contacts Grid */}
       <motion.div
@@ -375,8 +345,8 @@ export default function EmergencyPage() {
         animate="visible"
         className="grid md:grid-cols-2 gap-6"
       >
-        {filteredContacts.map((contact) => {
-          const catInfo = getCategoryInfo(contact.category);
+        {contacts.map((contact) => {
+          const catInfo = getCategoryInfo(contact.relationship);
           const Icon = catInfo.icon;
 
           return (
@@ -391,7 +361,7 @@ export default function EmergencyPage() {
                 <div className="flex items-start gap-4">
                   <div className={`relative p-3 rounded-xl ${catInfo.bgAccent} border ${catInfo.borderAccent}`}>
                     <Icon className={`w-5 h-5 ${catInfo.accent}`} />
-                    {contact.isPrimary && (
+                    {contact.priority === 1 && (
                       <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-sage flex items-center justify-center">
                         <Star className="w-2.5 h-2.5 text-white fill-current" />
                       </div>
@@ -407,38 +377,32 @@ export default function EmergencyPage() {
                 </div>
 
                 {/* Call Button */}
-                <motion.a
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  href={`tel:${contact.phone.replace(/\s/g, "")}`}
-                  className="p-3 rounded-xl bg-sage hover:bg-sage-dark text-white shadow-lg shadow-sage/20 transition-all"
-                >
-                  <PhoneCall className="w-5 h-5" />
-                </motion.a>
+                {contact.phone && (
+                  <motion.a
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    href={`tel:${contact.phone.replace(/\s/g, "")}`}
+                    className="p-3 rounded-xl bg-sage hover:bg-sage-dark text-white shadow-lg shadow-sage/20 transition-all"
+                  >
+                    <PhoneCall className="w-5 h-5" />
+                  </motion.a>
+                )}
               </div>
 
               {/* Contact Details */}
               <div className="mt-4 space-y-2">
-                <button
-                  onClick={() => copyPhone(contact.phone)}
-                  className="flex items-center gap-2 text-sm hover:text-sage transition-colors w-full"
-                >
-                  <Phone className="w-4 h-4 text-muted-foreground" />
-                  {contact.phone}
-                  {copiedPhone === contact.phone ? (
-                    <CheckCircle2 className="w-4 h-4 text-sage ml-auto" />
-                  ) : (
-                    <Copy className="w-4 h-4 opacity-40 ml-auto" />
-                  )}
-                </button>
-
-                {contact.alternatePhone && (
+                {contact.phone && (
                   <button
-                    onClick={() => copyPhone(contact.alternatePhone!)}
-                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-sage transition-colors"
+                    onClick={() => copyPhone(contact.phone!)}
+                    className="flex items-center gap-2 text-sm hover:text-sage transition-colors w-full"
                   >
-                    <Phone className="w-4 h-4" />
-                    {contact.alternatePhone}
+                    <Phone className="w-4 h-4 text-muted-foreground" />
+                    {contact.phone}
+                    {copiedPhone === contact.phone ? (
+                      <CheckCircle2 className="w-4 h-4 text-sage ml-auto" />
+                    ) : (
+                      <Copy className="w-4 h-4 opacity-40 ml-auto" />
+                    )}
                   </button>
                 )}
 
@@ -452,45 +416,29 @@ export default function EmergencyPage() {
                   </a>
                 )}
 
-                {contact.address && (
+                {contact.bloodType && (
                   <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="w-4 h-4" />
-                    {contact.address}
+                    <Heart className="w-4 h-4" />
+                    Blood Type: {contact.bloodType}
                   </p>
                 )}
 
-                {contact.notes && (
+                {contact.instructions && (
                   <p className="flex items-center gap-2 text-sm text-muted-foreground italic">
                     <MessageSquare className="w-4 h-4" />
-                    {contact.notes}
+                    {contact.instructions}
                   </p>
                 )}
               </div>
 
               {/* Actions */}
-              <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
-                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {!contact.isPrimary && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setPrimaryContact(contact.id)}
-                      className="h-8 text-sage hover:text-sage-dark hover:bg-sage/10"
-                    >
-                      <Star className="w-4 h-4 mr-1" />
-                      Set Primary
-                    </Button>
-                  )}
-                </div>
+              <div className="mt-4 pt-4 border-t border-border flex items-center justify-end">
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => setContacts((prev) => prev.filter((c) => c.id !== contact.id))}
+                    onClick={() => deleteContact(contact.id)}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -538,10 +486,7 @@ export default function EmergencyPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm p-4"
-            onClick={() => {
-              setShowAddModal(false);
-              setSelectedCategory(null);
-            }}
+            onClick={() => setShowAddModal(false)}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
@@ -551,60 +496,15 @@ export default function EmergencyPage() {
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-lg bg-card rounded-3xl border border-border shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
             >
-              {!selectedCategory ? (
-                <>
-                  <div className="p-6 border-b border-border">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h2 className="font-serif text-xl font-medium text-foreground">Add Emergency Contact</h2>
-                        <p className="text-muted-foreground text-sm mt-1">Select a category first</p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowAddModal(false)}
-                        className="h-10 w-10 p-0"
-                      >
-                        <X className="w-5 h-5" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="p-6 grid grid-cols-2 gap-3">
-                    {categoryTypes.map((cat) => {
-                      const Icon = cat.icon;
-                      return (
-                        <motion.button
-                          key={cat.id}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => setSelectedCategory(cat.id as ContactCategory)}
-                          className={`flex items-center gap-4 p-4 rounded-2xl border-2 border-border hover:border-sage/40 hover:bg-sage/5 transition-all text-left group`}
-                        >
-                          <div className={`p-3 rounded-xl ${cat.bgAccent} border ${cat.borderAccent} group-hover:scale-105 transition-transform`}>
-                            <Icon className={`w-5 h-5 ${cat.accent}`} />
-                          </div>
-                          <span className="font-medium text-foreground">{cat.name}</span>
-                        </motion.button>
-                      );
-                    })}
-                  </div>
-                </>
-              ) : (
-                <AddContactForm
-                  category={selectedCategory}
-                  onClose={() => {
-                    setShowAddModal(false);
-                    setSelectedCategory(null);
-                  }}
-                  onSave={(contact) => {
-                    setContacts((prev) => [...prev, { ...contact, id: Date.now().toString() }]);
-                    setShowAddModal(false);
-                    setSelectedCategory(null);
-                  }}
-                  isFirstContact={contacts.length === 0}
-                />
-              )}
+              <AddContactForm
+                availableFamilyMembers={availableFamilyMembers}
+                onClose={() => setShowAddModal(false)}
+                onSave={() => {
+                  setShowAddModal(false);
+                  fetchContacts();
+                }}
+                isFirstContact={contacts.length === 0}
+              />
             </motion.div>
           </motion.div>
         )}
@@ -614,43 +514,59 @@ export default function EmergencyPage() {
 }
 
 function AddContactForm({
-  category,
+  availableFamilyMembers,
   onClose,
   onSave,
   isFirstContact,
 }: {
-  category: ContactCategory;
+  availableFamilyMembers: AvailableFamilyMember[];
   onClose: () => void;
-  onSave: (contact: Omit<EmergencyContact, "id">) => void;
+  onSave: () => void;
   isFirstContact: boolean;
 }) {
-  const catInfo = categoryTypes.find((c) => c.id === category)!;
-  const Icon = catInfo.icon;
+  const [saving, setSaving] = useState(false);
+  const [useExisting, setUseExisting] = useState(availableFamilyMembers.length > 0);
+  const [selectedFamilyMember, setSelectedFamilyMember] = useState<string>("");
 
   const [formData, setFormData] = useState({
     name: "",
     relationship: "",
     phone: "",
-    alternatePhone: "",
     email: "",
-    address: "",
-    isPrimary: isFirstContact,
-    notes: "",
+    priority: isFirstContact ? 1 : 2,
+    bloodType: "",
+    instructions: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({
-      name: formData.name,
-      relationship: formData.relationship,
-      category,
-      phone: formData.phone,
-      alternatePhone: formData.alternatePhone || undefined,
-      email: formData.email || undefined,
-      address: formData.address || undefined,
-      isPrimary: formData.isPrimary,
-      notes: formData.notes || undefined,
-    });
+    setSaving(true);
+    try {
+      const res = await fetch("/api/emergency", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          familyMemberId: useExisting ? selectedFamilyMember : undefined,
+          name: formData.name,
+          relationship: formData.relationship,
+          phone: formData.phone || null,
+          email: formData.email || null,
+          priority: formData.priority,
+          bloodType: formData.bloodType || null,
+          instructions: formData.instructions || null,
+          allergies: [],
+          medications: [],
+        }),
+      });
+
+      if (res.ok) {
+        onSave();
+      }
+    } catch (error) {
+      console.error("Error creating contact:", error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -658,11 +574,11 @@ function AddContactForm({
       <div className="p-6 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-xl ${catInfo.bgAccent} border ${catInfo.borderAccent}`}>
-              <Icon className={`w-6 h-6 ${catInfo.accent}`} />
+            <div className="p-2 rounded-xl bg-sage/10">
+              <Phone className="w-6 h-6 text-sage" />
             </div>
             <div>
-              <h2 className="font-serif text-xl font-medium text-foreground">Add {catInfo.name} Contact</h2>
+              <h2 className="font-serif text-xl font-medium text-foreground">Add Emergency Contact</h2>
               <p className="text-muted-foreground text-sm">Fill in the details below</p>
             </div>
           </div>
@@ -679,111 +595,143 @@ function AddContactForm({
       </div>
 
       <div className="p-6 space-y-4">
+        {/* Option to use existing family member */}
+        {availableFamilyMembers.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setUseExisting(true)}
+                className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${
+                  useExisting
+                    ? "bg-sage text-white"
+                    : "bg-sage/10 hover:bg-sage/20"
+                }`}
+              >
+                From Family
+              </button>
+              <button
+                type="button"
+                onClick={() => setUseExisting(false)}
+                className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${
+                  !useExisting
+                    ? "bg-sage text-white"
+                    : "bg-sage/10 hover:bg-sage/20"
+                }`}
+              >
+                New Contact
+              </button>
+            </div>
+
+            {useExisting && (
+              <div className="space-y-2">
+                <Label>Select Family Member</Label>
+                <select
+                  value={selectedFamilyMember}
+                  onChange={(e) => setSelectedFamilyMember(e.target.value)}
+                  className="w-full h-12 px-4 rounded-xl border border-sage/30 bg-background"
+                  required={useExisting}
+                >
+                  <option value="">Select a family member</option>
+                  {availableFamilyMembers.map((fm) => (
+                    <option key={fm.id} value={fm.id}>
+                      {fm.name} - {fm.relationship}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!useExisting && (
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Name *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Full name"
+                  required={!useExisting}
+                  className="rounded-xl"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="relationship">Relationship *</Label>
+                <Input
+                  id="relationship"
+                  value={formData.relationship}
+                  onChange={(e) => setFormData({ ...formData, relationship: e.target.value })}
+                  placeholder="e.g., Wife, Doctor"
+                  required={!useExisting}
+                  className="rounded-xl"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="+91 98765 43210"
+                  className="rounded-xl"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="email@example.com"
+                  className="rounded-xl"
+                />
+              </div>
+            </div>
+          </>
+        )}
+
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Name *</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Full name"
-              required
-              className="rounded-xl"
-            />
+            <Label htmlFor="priority">Priority</Label>
+            <select
+              id="priority"
+              value={formData.priority}
+              onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) })}
+              className="w-full h-10 px-4 rounded-xl border border-sage/30 bg-background"
+            >
+              {[1, 2, 3, 4, 5].map((p) => (
+                <option key={p} value={p}>
+                  {p === 1 ? "Primary" : `Priority ${p}`}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="relationship">Relationship *</Label>
+            <Label htmlFor="bloodType">Blood Type</Label>
             <Input
-              id="relationship"
-              value={formData.relationship}
-              onChange={(e) => setFormData({ ...formData, relationship: e.target.value })}
-              placeholder="e.g., Wife, Doctor"
-              required
-              className="rounded-xl"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="phone">Phone *</Label>
-            <Input
-              id="phone"
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              placeholder="+91 98765 43210"
-              required
-              className="rounded-xl"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="alternatePhone">Alternate Phone</Label>
-            <Input
-              id="alternatePhone"
-              type="tel"
-              value={formData.alternatePhone}
-              onChange={(e) => setFormData({ ...formData, alternatePhone: e.target.value })}
-              placeholder="Optional"
+              id="bloodType"
+              value={formData.bloodType}
+              onChange={(e) => setFormData({ ...formData, bloodType: e.target.value })}
+              placeholder="e.g., A+, O-"
               className="rounded-xl"
             />
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="instructions">Special Instructions</Label>
           <Input
-            id="email"
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            placeholder="email@example.com"
-            className="rounded-xl"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="address">Address</Label>
-          <Input
-            id="address"
-            value={formData.address}
-            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            placeholder="Home or work address"
-            className="rounded-xl"
-          />
-        </div>
-
-        <div className="flex items-center justify-between p-4 rounded-2xl bg-sage/5 border border-sage/20">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-sage/10">
-              <Star className="w-4 h-4 text-sage" />
-            </div>
-            <div>
-              <p className="font-medium text-foreground">Primary Contact</p>
-              <p className="text-sm text-muted-foreground">First person to call</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setFormData({ ...formData, isPrimary: !formData.isPrimary })}
-            className={`relative w-12 h-6 rounded-full transition-colors ${
-              formData.isPrimary ? "bg-sage" : "bg-muted"
-            }`}
-          >
-            <motion.div
-              layout
-              className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm"
-              style={{ left: formData.isPrimary ? "calc(100% - 20px)" : "4px" }}
-            />
-          </button>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="notes">Notes</Label>
-          <Input
-            id="notes"
-            value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            id="instructions"
+            value={formData.instructions}
+            onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
             placeholder="Any additional information..."
             className="rounded-xl"
           />
@@ -794,8 +742,8 @@ function AddContactForm({
         <Button type="button" variant="ghost" onClick={onClose} className="rounded-xl">
           Cancel
         </Button>
-        <Button type="submit" className="rounded-xl bg-sage hover:bg-sage-dark text-white">
-          <CheckCircle2 className="w-4 h-4 mr-2" />
+        <Button type="submit" className="rounded-xl bg-sage hover:bg-sage-dark text-white" disabled={saving}>
+          {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
           Save Contact
         </Button>
       </div>

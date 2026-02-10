@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -10,7 +10,6 @@ import {
   Clock,
   User,
   Send,
-  Edit3,
   Trash2,
   X,
   Gift,
@@ -18,8 +17,7 @@ import {
   Heart,
   Cake,
   Star,
-  ChevronDown,
-  Check
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -27,12 +25,12 @@ interface FutureMessage {
   id: string;
   title: string;
   content: string;
-  recipient: string;
+  recipientName: string;
   recipientEmail: string;
-  scheduledDate: Date;
+  scheduledDate: string;
   occasion: string;
-  status: "scheduled" | "sent" | "draft";
-  createdAt: Date;
+  status: "scheduled" | "sent" | "draft" | "cancelled";
+  createdAt: string;
 }
 
 const occasions = [
@@ -49,50 +47,86 @@ export default function FutureMessagesPage() {
   const [showComposer, setShowComposer] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<FutureMessage | null>(null);
   const [filter, setFilter] = useState<"all" | "scheduled" | "sent" | "draft">("all");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
     title: "",
     content: "",
-    recipient: "",
+    recipientName: "",
     recipientEmail: "",
     scheduledDate: "",
     occasion: "birthday",
   });
 
-  const handleSubmit = (asDraft = false) => {
-    if (!form.title || !form.content || !form.recipient) return;
+  const fetchMessages = useCallback(async () => {
+    try {
+      const res = await fetch("/api/messages/scheduled");
+      if (res.ok) {
+        const data = await res.json();
+        setMessages(data.messages || []);
+      }
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-    const newMessage: FutureMessage = {
-      id: Date.now().toString(),
-      title: form.title,
-      content: form.content,
-      recipient: form.recipient,
-      recipientEmail: form.recipientEmail,
-      scheduledDate: new Date(form.scheduledDate),
-      occasion: form.occasion,
-      status: asDraft ? "draft" : "scheduled",
-      createdAt: new Date(),
-    };
+  useEffect(() => {
+    fetchMessages();
+  }, [fetchMessages]);
 
-    setMessages((prev) => [newMessage, ...prev]);
-    setShowComposer(false);
-    resetForm();
+  const handleSubmit = async (asDraft = false) => {
+    if (!form.title || !form.content || !form.recipientName) return;
+
+    setSaving(true);
+    try {
+      const res = await fetch("/api/messages/scheduled", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          status: asDraft ? "draft" : "scheduled",
+        }),
+      });
+
+      if (res.ok) {
+        setShowComposer(false);
+        resetForm();
+        fetchMessages();
+      }
+    } catch (error) {
+      console.error("Error creating message:", error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const resetForm = () => {
     setForm({
       title: "",
       content: "",
-      recipient: "",
+      recipientName: "",
       recipientEmail: "",
       scheduledDate: "",
       occasion: "birthday",
     });
   };
 
-  const deleteMessage = (id: string) => {
-    setMessages((prev) => prev.filter((m) => m.id !== id));
-    setSelectedMessage(null);
+  const deleteMessage = async (id: string) => {
+    try {
+      const res = await fetch(`/api/messages/scheduled/${id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        setSelectedMessage(null);
+        fetchMessages();
+      }
+    } catch (error) {
+      console.error("Error deleting message:", error);
+    }
   };
 
   const filteredMessages = messages.filter((m) => {
@@ -101,6 +135,14 @@ export default function FutureMessagesPage() {
   });
 
   const getOccasion = (id: string) => occasions.find((o) => o.id === id) || occasions[5];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-sage" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-sage-light/10">
@@ -214,11 +256,11 @@ export default function FutureMessagesPage() {
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <User className="w-3 h-3" />
-                        <span>{message.recipient}</span>
+                        <span>{message.recipientName}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
-                        <span>{message.scheduledDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                        <span>{new Date(message.scheduledDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
                       </div>
                     </div>
                   </div>
@@ -297,8 +339,8 @@ export default function FutureMessagesPage() {
                   </label>
                   <input
                     type="text"
-                    value={form.recipient}
-                    onChange={(e) => setForm((prev) => ({ ...prev, recipient: e.target.value }))}
+                    value={form.recipientName}
+                    onChange={(e) => setForm((prev) => ({ ...prev, recipientName: e.target.value }))}
                     placeholder="Who is this for?"
                     className="w-full px-4 py-3 rounded-xl bg-sage/5 border border-sage/20 focus:border-sage focus:outline-none transition-colors"
                   />
@@ -351,14 +393,20 @@ export default function FutureMessagesPage() {
                   variant="outline"
                   className="flex-1 border-sage/30"
                   onClick={() => handleSubmit(true)}
+                  disabled={saving}
                 >
                   Save as Draft
                 </Button>
                 <Button
                   className="flex-1 bg-sage hover:bg-sage-dark"
                   onClick={() => handleSubmit(false)}
+                  disabled={saving}
                 >
-                  <Send className="w-4 h-4 mr-2" />
+                  {saving ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4 mr-2" />
+                  )}
                   Schedule Message
                 </Button>
               </div>
@@ -390,7 +438,7 @@ export default function FutureMessagesPage() {
                       {selectedMessage.title}
                     </h2>
                     <p className="text-sm text-muted-foreground">
-                      To: {selectedMessage.recipient}
+                      To: {selectedMessage.recipientName}
                     </p>
                   </div>
                 </div>
@@ -414,25 +462,22 @@ export default function FutureMessagesPage() {
               <div className="flex items-center gap-4 text-sm text-muted-foreground mb-6">
                 <div className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
-                  <span>Scheduled: {selectedMessage.scheduledDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                  <span>Scheduled: {new Date(selectedMessage.scheduledDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Clock className="w-4 h-4" />
-                  <span>Created: {selectedMessage.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                  <span>Created: {new Date(selectedMessage.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
                 </div>
               </div>
 
               <div className="flex gap-3">
-                <Button variant="outline" className="flex-1 border-sage/30">
-                  <Edit3 className="w-4 h-4 mr-2" />
-                  Edit
-                </Button>
                 <Button
                   variant="outline"
                   className="border-destructive/30 text-destructive hover:bg-destructive/10"
                   onClick={() => deleteMessage(selectedMessage.id)}
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
                 </Button>
               </div>
             </div>
