@@ -216,7 +216,7 @@ export default function ElderCarePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-sage" />
       </div>
     );
   }
@@ -227,7 +227,7 @@ export default function ElderCarePage() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-500 via-rose-500 to-pink-500 p-8 text-white"
+        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sage via-sage to-sage-dark p-8 text-white"
       >
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-2">
@@ -309,8 +309,8 @@ export default function ElderCarePage() {
 
         <div className="p-5 rounded-2xl border border-border bg-card">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-rose-500/10">
-              <Smile className="w-5 h-5 text-rose-500" />
+            <div className="p-2 rounded-xl bg-sage/10">
+              <Smile className="w-5 h-5 text-sage" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Good Days (Week)</p>
@@ -412,7 +412,7 @@ export default function ElderCarePage() {
           <div className="p-6 rounded-2xl border border-border bg-card">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold flex items-center gap-2">
-                <Smile className="w-5 h-5 text-rose-500" />
+                <Smile className="w-5 h-5 text-sage" />
                 This Week's Mood
               </h3>
             </div>
@@ -737,7 +737,7 @@ export default function ElderCarePage() {
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ delay: 0.5, type: "spring" }}
-        className="fixed bottom-6 right-6 w-16 h-16 rounded-full bg-gradient-to-br from-rose-500 to-pink-500 text-white shadow-lg shadow-rose-500/25 flex items-center justify-center hover:scale-110 transition-transform"
+        className="fixed bottom-6 right-6 w-16 h-16 rounded-full bg-gradient-to-br from-sage to-sage-dark text-white shadow-lg shadow-sage/25 flex items-center justify-center hover:scale-110 transition-transform"
       >
         <Mic className="w-7 h-7" />
       </motion.button>

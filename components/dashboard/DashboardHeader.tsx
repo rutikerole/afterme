@@ -97,15 +97,13 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
     .toUpperCase()
     .slice(0, 2);
 
+  // Simplified navigation - main items only
   const navLinks = [
     { href: "/dashboard", label: "Home" },
     { href: "/dashboard/voice", label: "Voice" },
     { href: "/dashboard/memories", label: "Memories" },
-    { href: "/dashboard/stories", label: "Stories" },
-    { href: "/dashboard/messages", label: "Messages" },
-    { href: "/dashboard/family", label: "Family" },
-    { href: "/dashboard/eldercare", label: "Eldercare" },
     { href: "/dashboard/vault", label: "Vault" },
+    { href: "/dashboard/family", label: "Family" },
   ];
 
   return (
@@ -321,6 +319,23 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
                 </Link>
               ))}
               <hr className="my-2 border-sage/10" />
+              <p className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">More Features</p>
+              <Link
+                href="/dashboard/stories"
+                className="flex items-center gap-3 px-4 py-3 text-muted-foreground hover:text-sage-dark hover:bg-sage/10 rounded-xl transition-colors"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-sage" />
+                Stories
+              </Link>
+              <Link
+                href="/dashboard/messages"
+                className="flex items-center gap-3 px-4 py-3 text-muted-foreground hover:text-sage-dark hover:bg-sage/10 rounded-xl transition-colors"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-sage" />
+                Messages
+              </Link>
               <Link
                 href="/dashboard/eldercare"
                 className="flex items-center gap-3 px-4 py-3 text-muted-foreground hover:text-sage-dark hover:bg-sage/10 rounded-xl transition-colors"
@@ -330,20 +345,12 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
                 Eldercare
               </Link>
               <Link
-                href="/dashboard/vault"
-                className="flex items-center gap-3 px-4 py-3 text-muted-foreground hover:text-sage-dark hover:bg-sage/10 rounded-xl transition-colors"
-                onClick={() => setShowMobileMenu(false)}
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-sage" />
-                Life Vault
-              </Link>
-              <Link
                 href="/dashboard/legacy"
                 className="flex items-center gap-3 px-4 py-3 text-muted-foreground hover:text-sage-dark hover:bg-sage/10 rounded-xl transition-colors"
                 onClick={() => setShowMobileMenu(false)}
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-sage" />
-                Legacy Instructions
+                Legacy
               </Link>
               <Link
                 href="/dashboard/progress"
@@ -351,7 +358,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
                 onClick={() => setShowMobileMenu(false)}
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-sage" />
-                My Progress
+                Progress
               </Link>
             </div>
           </nav>
