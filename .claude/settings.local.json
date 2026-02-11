@@ -40,7 +40,8 @@
       "Bash(npx prisma db push:*)",
       "Bash(node:*)",
       "Bash(npx @sentry/wizard@latest:*)",
-      "Bash(npx vercel:*)"
+      "Bash(npx vercel:*)",
+      "Bash(npm i:*)"
     ]
   }
 }

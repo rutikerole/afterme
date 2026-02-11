@@ -46,6 +46,10 @@ interface FinanceRecord {
   contactEmail?: string;
   website?: string;
   importance?: string;
+  // Loan-specific fields (stored in notes or separate)
+  loanAmount?: number;
+  emi?: number;
+  interestRate?: number;
   nominees?: Array<{
     id: string;
     name: string;
@@ -201,12 +205,12 @@ export default function FinancePage() {
     activeTab === "all" ? records : records.filter((r) => r.type === activeTab);
 
   const totalAssets = records
-    .filter((r) => r.type === "bank" || r.type === "investment" || r.type === "ppf_epf")
+    .filter((r) => r.type === "bank_account" || r.type === "investment" || r.type === "crypto")
     .reduce((sum, r) => sum + (r.balance || 0), 0);
 
   const totalLiabilities = records
-    .filter((r) => r.type === "loan")
-    .reduce((sum, r) => sum + (r.loanAmount || 0), 0);
+    .filter((r) => r.type === "loan" || r.type === "credit_card")
+    .reduce((sum, r) => sum + (r.balance || 0), 0);
 
   const netWorth = totalAssets - totalLiabilities;
 
@@ -514,7 +518,7 @@ export default function FinancePage() {
                           <h3 className="font-serif text-xl font-medium">{record.name}</h3>
                           <p className="text-sm text-muted-foreground flex items-center gap-2">
                             <Building2 className="w-3.5 h-3.5" />
-                            {record.institution}
+                            {record.institutionName}
                           </p>
                         </div>
 
@@ -574,7 +578,7 @@ export default function FinancePage() {
                         </div>
 
                         {/* Nominee Warning */}
-                        {!record.nominee && record.type !== "loan" && (
+                        {(!record.nominees || record.nominees.length === 0) && record.type !== "loan" && (
                           <motion.div
                             className="flex items-center gap-2 text-amber-600 text-sm"
                             initial={{ opacity: 0 }}
@@ -585,10 +589,10 @@ export default function FinancePage() {
                           </motion.div>
                         )}
 
-                        {record.nominee && (
+                        {record.nominees && record.nominees.length > 0 && (
                           <p className="text-sm text-muted-foreground flex items-center gap-2">
                             <span className="w-1.5 h-1.5 rounded-full bg-sage" />
-                            Nominee: {record.nominee}
+                            Nominee: {record.nominees.map(n => n.name).join(", ")}
                           </p>
                         )}
 
@@ -766,13 +770,12 @@ function AddFinanceForm({
 
   const [formData, setFormData] = useState({
     name: "",
-    institution: "",
+    institutionName: "",
     accountNumber: "",
     balance: "",
     loanAmount: "",
     emi: "",
     interestRate: "",
-    maturityDate: "",
     nominee: "",
     notes: "",
   });
@@ -782,20 +785,19 @@ function AddFinanceForm({
     onSave({
       type,
       name: formData.name || typeInfo.name,
-      institution: formData.institution,
+      institutionName: formData.institutionName,
       accountNumber: formData.accountNumber || undefined,
       balance: formData.balance ? parseFloat(formData.balance) : undefined,
       loanAmount: formData.loanAmount ? parseFloat(formData.loanAmount) : undefined,
       emi: formData.emi ? parseFloat(formData.emi) : undefined,
       interestRate: formData.interestRate ? parseFloat(formData.interestRate) : undefined,
-      maturityDate: formData.maturityDate || undefined,
-      nominee: formData.nominee || undefined,
+      nominees: formData.nominee ? [{ id: "", name: formData.nominee, relationship: "nominee" }] : undefined,
       notes: formData.notes || undefined,
     });
   };
 
   const isLoan = type === "loan";
-  const isAccount = type === "bank" || type === "ppf_epf";
+  const isAccount = type === "bank_account";
   const isInvestment = type === "investment";
 
   return (
@@ -833,11 +835,11 @@ function AddFinanceForm({
             />
           </motion.div>
           <motion.div className="space-y-2" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.05 }}>
-            <Label htmlFor="institution">Institution *</Label>
+            <Label htmlFor="institutionName">Institution *</Label>
             <Input
-              id="institution"
-              value={formData.institution}
-              onChange={(e) => setFormData({ ...formData, institution: e.target.value })}
+              id="institutionName"
+              value={formData.institutionName}
+              onChange={(e) => setFormData({ ...formData, institutionName: e.target.value })}
               placeholder="e.g., HDFC Bank"
               required
               className="h-12 rounded-xl border-sage/30 focus:border-sage"

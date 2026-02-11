@@ -69,6 +69,7 @@ export interface User {
   email: string;
   name: string;
   avatar?: string | null;
+  phone?: string | null;
   createdAt: Date;
 }
 
@@ -140,6 +141,7 @@ export async function getCurrentUser(): Promise<User | null> {
       email: session.user.email,
       name: session.user.name,
       avatar: session.user.avatar,
+      phone: session.user.phone,
       createdAt: session.user.createdAt,
     };
   } catch {

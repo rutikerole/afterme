@@ -28,9 +28,6 @@ export async function GET(request: NextRequest) {
           lte: now,
         },
       },
-      include: {
-        // Get user info for the sender
-      },
     });
 
     console.log(`[Cron] Found ${messagesToSend.length} messages to send`);

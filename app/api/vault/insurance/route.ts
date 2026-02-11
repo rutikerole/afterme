@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
       .filter(item => !type || item.insurancePolicy?.type === type)
       .map(item => {
         // Decrypt sensitive data if present
-        let decryptedData: Record<string, unknown> = {};
+        let decryptedData: { coverageAmount?: number; premium?: number } = {};
         if (item.encryptedData) {
           try {
             decryptedData = JSON.parse(decrypt(item.encryptedData));

@@ -188,18 +188,21 @@ export default function InsurancePage() {
     return insuranceTypes.find((i) => i.id === type) || insuranceTypes[5];
   };
 
-  const isExpiringSoon = (date: string) => {
+  const isExpiringSoon = (date?: string) => {
+    if (!date) return false;
     const expiry = new Date(date);
     const today = new Date();
     const daysLeft = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     return daysLeft <= 30 && daysLeft > 0;
   };
 
-  const isExpired = (date: string) => {
+  const isExpired = (date?: string) => {
+    if (!date) return false;
     return new Date(date) < new Date();
   };
 
-  const getDaysLeft = (date: string) => {
+  const getDaysLeft = (date?: string) => {
+    if (!date) return 0;
     const expiry = new Date(date);
     const today = new Date();
     return Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
@@ -208,9 +211,9 @@ export default function InsurancePage() {
   const filteredPolicies =
     activeTab === "all" ? policies : policies.filter((p) => p.type === activeTab);
 
-  const totalCoverage = policies.reduce((sum, p) => sum + p.sumInsured, 0);
-  const totalPremium = policies.reduce((sum, p) => sum + p.premium, 0);
-  const expiringSoonCount = policies.filter((p) => isExpiringSoon(p.expiryDate)).length;
+  const totalCoverage = policies.reduce((sum, p) => sum + (p.coverageAmount || 0), 0);
+  const totalPremium = policies.reduce((sum, p) => sum + (p.premium || 0), 0);
+  const expiringSoonCount = policies.filter((p) => isExpiringSoon(p.endDate)).length;
 
   return (
     <motion.div
@@ -468,9 +471,9 @@ export default function InsurancePage() {
             const typeInfo = getTypeInfo(policy.type);
             const Icon = typeInfo.icon;
             const accent = getAccentStyles(typeInfo.accentType);
-            const expiringSoon = isExpiringSoon(policy.expiryDate);
-            const expired = isExpired(policy.expiryDate);
-            const daysLeft = getDaysLeft(policy.expiryDate);
+            const expiringSoon = isExpiringSoon(policy.endDate);
+            const expired = isExpired(policy.endDate);
+            const daysLeft = getDaysLeft(policy.endDate);
 
             return (
               <motion.div
@@ -556,34 +559,38 @@ export default function InsurancePage() {
                           <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-sage/15 border border-sage/30">
                             <Shield className="w-4 h-4 text-sage" />
                             <span className="text-sm font-semibold text-sage-dark">
-                              Cover: {formatCurrency(policy.sumInsured)}
+                              Cover: {formatCurrency(policy.coverageAmount || 0)}
                             </span>
                           </div>
                           <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200/50">
                             <IndianRupee className="w-4 h-4 text-rose-500" />
                             <span className="text-sm font-semibold text-rose-600">
-                              {formatCurrency(policy.premium)}/{policy.premiumFrequency === "yearly" ? "yr" : policy.premiumFrequency === "monthly" ? "mo" : "qtr"}
+                              {formatCurrency(policy.premium || 0)}/{policy.premiumFrequency === "annually" ? "yr" : policy.premiumFrequency === "monthly" ? "mo" : "qtr"}
                             </span>
                           </div>
                         </div>
 
                         {/* Dates */}
                         <div className="flex items-center gap-4 text-sm">
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Calendar className="w-4 h-4" />
-                            <span>Start: {new Date(policy.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
-                          </div>
-                          <div className={`flex items-center gap-2 ${expired ? "text-red-500" : expiringSoon ? "text-amber-600" : "text-muted-foreground"}`}>
-                            <Calendar className="w-4 h-4" />
-                            <span>Expires: {new Date(policy.expiryDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
-                          </div>
+                          {policy.startDate && (
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <Calendar className="w-4 h-4" />
+                              <span>Start: {new Date(policy.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                            </div>
+                          )}
+                          {policy.endDate && (
+                            <div className={`flex items-center gap-2 ${expired ? "text-red-500" : expiringSoon ? "text-amber-600" : "text-muted-foreground"}`}>
+                              <Calendar className="w-4 h-4" />
+                              <span>Expires: {new Date(policy.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                            </div>
+                          )}
                         </div>
 
                         {/* Nominee */}
-                        {policy.nominee ? (
+                        {policy.nominees && policy.nominees.length > 0 ? (
                           <p className="text-sm text-muted-foreground flex items-center gap-2">
                             <Users className="w-4 h-4 text-sage" />
-                            Nominee: {policy.nominee}
+                            Nominee: {policy.nominees.map(n => n.name).join(", ")}
                           </p>
                         ) : (
                           <motion.div
@@ -772,11 +779,11 @@ function AddInsuranceForm({
     name: "",
     provider: "",
     policyNumber: "",
-    sumInsured: "",
+    coverageAmount: "",
     premium: "",
-    premiumFrequency: "yearly" as InsurancePolicy["premiumFrequency"],
+    premiumFrequency: "annually" as InsurancePolicy["premiumFrequency"],
     startDate: "",
-    expiryDate: "",
+    endDate: "",
     nominee: "",
     notes: "",
   });
@@ -788,12 +795,12 @@ function AddInsuranceForm({
       name: formData.name || typeInfo.name,
       provider: formData.provider,
       policyNumber: formData.policyNumber,
-      sumInsured: parseFloat(formData.sumInsured) || 0,
+      coverageAmount: parseFloat(formData.coverageAmount) || 0,
       premium: parseFloat(formData.premium) || 0,
       premiumFrequency: formData.premiumFrequency,
       startDate: formData.startDate,
-      expiryDate: formData.expiryDate,
-      nominee: formData.nominee || undefined,
+      endDate: formData.endDate,
+      nominees: formData.nominee ? [{ id: "", name: formData.nominee, relationship: "beneficiary" }] : undefined,
       notes: formData.notes || undefined,
     });
   };
@@ -859,12 +866,12 @@ function AddInsuranceForm({
 
         <motion.div className="grid grid-cols-2 gap-4" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}>
           <div className="space-y-2">
-            <Label htmlFor="sumInsured">Sum Insured (₹) *</Label>
+            <Label htmlFor="coverageAmount">Coverage Amount (₹) *</Label>
             <Input
-              id="sumInsured"
+              id="coverageAmount"
               type="number"
-              value={formData.sumInsured}
-              onChange={(e) => setFormData({ ...formData, sumInsured: e.target.value })}
+              value={formData.coverageAmount}
+              onChange={(e) => setFormData({ ...formData, coverageAmount: e.target.value })}
               placeholder="1000000"
               required
               className="h-12 rounded-xl border-sage/30 focus:border-sage"
@@ -887,7 +894,7 @@ function AddInsuranceForm({
         <motion.div className="space-y-2" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
           <Label>Premium Frequency</Label>
           <div className="flex gap-2">
-            {(["monthly", "quarterly", "yearly"] as const).map((freq) => (
+            {(["monthly", "quarterly", "annually"] as const).map((freq) => (
               <button
                 key={freq}
                 type="button"
@@ -898,7 +905,7 @@ function AddInsuranceForm({
                     : "bg-sage-light/30 hover:bg-sage-light/50 border border-sage/20"
                 }`}
               >
-                {freq.charAt(0).toUpperCase() + freq.slice(1)}
+                {freq === "annually" ? "Yearly" : freq.charAt(0).toUpperCase() + freq.slice(1)}
               </button>
             ))}
           </div>
@@ -917,12 +924,12 @@ function AddInsuranceForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="expiryDate">Expiry Date *</Label>
+            <Label htmlFor="endDate">End Date *</Label>
             <Input
-              id="expiryDate"
+              id="endDate"
               type="date"
-              value={formData.expiryDate}
-              onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
+              value={formData.endDate}
+              onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
               required
               className="h-12 rounded-xl border-sage/30 focus:border-sage"
             />
