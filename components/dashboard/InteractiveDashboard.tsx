@@ -429,6 +429,90 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
       <DecorativeBackground />
 
       {/* ══════════════════════════════════════════════════════════════════
+          FLOATING SIDEBAR - Quick Pillar Access
+      ══════════════════════════════════════════════════════════════════ */}
+      <motion.nav
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.6, delay: 0.8 }}
+        className="fixed left-4 top-1/2 -translate-y-1/2 z-50 hidden lg:flex flex-col gap-1"
+      >
+        {/* Glass container */}
+        <div className="p-2 rounded-2xl bg-white/80 backdrop-blur-xl border border-sage/20 shadow-lg shadow-sage/10">
+          {PILLARS.map((pillar, index) => {
+            const Icon = pillar.icon;
+            return (
+              <Link key={pillar.id} href={pillar.href}>
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 * index + 0.8 }}
+                  className="group relative flex items-center"
+                >
+                  <motion.div
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 hover:bg-sage/15 cursor-pointer"
+                  >
+                    <Icon className="w-5 h-5 text-sage/70 group-hover:text-sage-dark transition-colors" />
+                    {/* Progress indicator */}
+                    {pillar.progress > 0 && (
+                      <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-sage" />
+                    )}
+                  </motion.div>
+                  {/* Tooltip label */}
+                  <div className="absolute left-full ml-3 px-3 py-1.5 rounded-lg bg-foreground/90 text-white text-sm font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 shadow-lg">
+                    {pillar.name}
+                    <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-foreground/90" />
+                  </div>
+                </motion.div>
+              </Link>
+            );
+          })}
+        </div>
+      </motion.nav>
+
+      {/* ══════════════════════════════════════════════════════════════════
+          MOBILE BOTTOM DOCK - Quick Pillar Access (visible on mobile/tablet)
+      ══════════════════════════════════════════════════════════════════ */}
+      <motion.nav
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 1 }}
+        className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 lg:hidden"
+      >
+        <div className="flex gap-1 p-2 rounded-2xl bg-white/90 backdrop-blur-xl border border-sage/20 shadow-lg shadow-black/10">
+          {PILLARS.slice(0, 5).map((pillar) => {
+            const Icon = pillar.icon;
+            return (
+              <Link key={pillar.id} href={pillar.href}>
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="relative w-11 h-11 rounded-xl flex items-center justify-center hover:bg-sage/15 transition-colors"
+                >
+                  <Icon className="w-5 h-5 text-sage/70" />
+                  {pillar.progress > 0 && (
+                    <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-sage" />
+                  )}
+                </motion.div>
+              </Link>
+            );
+          })}
+          {/* More button for remaining pillars */}
+          <Link href="#pillars">
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="w-11 h-11 rounded-xl flex items-center justify-center hover:bg-sage/15 transition-colors"
+            >
+              <span className="text-sage/70 text-xs font-bold">+3</span>
+            </motion.div>
+          </Link>
+        </div>
+      </motion.nav>
+
+      {/* ══════════════════════════════════════════════════════════════════
           SECTION 1: HERO - ARTISTIC WELCOME
       ══════════════════════════════════════════════════════════════════ */}
       <section className="relative px-6 pt-8 pb-16 overflow-hidden">
@@ -577,59 +661,6 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
               </div>
             </motion.div>
           </div>
-
-          {/* ══════════════════════════════════════════════════════════════════
-              QUICK ACCESS BAR - All Pillars
-          ══════════════════════════════════════════════════════════════════ */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
-            className="mb-10"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs uppercase tracking-[0.2em] text-sage/70">Quick Access</span>
-              <Link href="#pillars" className="text-xs text-sage hover:text-sage-dark transition-colors">
-                View all →
-              </Link>
-            </div>
-
-            {/* Scrollable Pillar Icons */}
-            <div className="relative">
-              {/* Gradient fade edges for scroll indication */}
-              <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none opacity-0 sm:opacity-100" />
-              <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none opacity-0 sm:opacity-100" />
-
-              <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2 sm:mx-0 sm:px-0 sm:overflow-visible sm:flex-wrap sm:justify-center lg:justify-start">
-                {PILLARS.map((pillar, index) => {
-                  const Icon = pillar.icon;
-                  return (
-                    <Link key={pillar.id} href={pillar.href}>
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.1 * index, duration: 0.3 }}
-                        whileHover={{ scale: 1.05, y: -2 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="relative flex flex-col items-center gap-2 p-3 sm:p-4 min-w-18 sm:min-w-20 rounded-2xl bg-white/70 hover:bg-white border border-sage/20 hover:border-sage/40 shadow-sm hover:shadow-md transition-all cursor-pointer group"
-                      >
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-sage/10 group-hover:bg-sage/20 flex items-center justify-center transition-colors">
-                          <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-sage group-hover:text-sage-dark transition-colors" />
-                        </div>
-                        <span className="text-[10px] sm:text-xs font-medium text-foreground/70 group-hover:text-foreground text-center whitespace-nowrap transition-colors">
-                          {pillar.name.split(' ')[0]}
-                        </span>
-                        {/* Progress indicator dot */}
-                        {pillar.progress > 0 && (
-                          <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-sage" />
-                        )}
-                      </motion.div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          </motion.div>
 
           {/* Recent Activity & Insights */}
           <motion.div
