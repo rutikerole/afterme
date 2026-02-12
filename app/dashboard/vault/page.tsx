@@ -22,7 +22,9 @@ import {
   Zap,
   Leaf,
   Loader2,
+  FileDown,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { vaultApi, type VaultItem } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -248,8 +250,35 @@ function FloatingLeaf({ className, delay = 0 }: { className?: string; delay?: nu
 export default function VaultPage() {
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [vaultItems, setVaultItems] = useState<VaultItem[]>([]);
   const [vaultSections, setVaultSections] = useState(defaultVaultSections);
+
+  const exportVaultToPDF = async () => {
+    setIsExporting(true);
+    try {
+      const response = await fetch("/api/export/vault");
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to export");
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "life-vault-export.pdf";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Vault exported successfully!");
+    } catch (error) {
+      console.error("Failed to export:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to export vault");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -471,6 +500,21 @@ export default function VaultPage() {
                     <p className="text-muted-foreground text-xs">Alerts</p>
                   </div>
                 </div>
+                <div className="h-8 w-px bg-sage/20" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={exportVaultToPDF}
+                  disabled={isExporting}
+                  className="border-sage/30 hover:border-sage hover:bg-sage/10"
+                >
+                  {isExporting ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <FileDown className="w-4 h-4 mr-2" />
+                  )}
+                  Export PDF
+                </Button>
               </motion.div>
             </div>
 

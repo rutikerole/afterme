@@ -19,6 +19,8 @@ import {
   Edit3,
   Camera,
   Loader2,
+  Sparkles,
+  Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { memoriesApi, getBase64FileSize, type Memory as ApiMemory } from "@/lib/api";
@@ -121,6 +123,8 @@ export default function MemoryVaultPage() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isTagging, setIsTagging] = useState(false);
+  const [memoryTags, setMemoryTags] = useState<Record<string, string[]>>({});
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -233,6 +237,29 @@ export default function MemoryVaultPage() {
     } catch (error) {
       console.error("Failed to delete memory:", error);
       toast.error("Failed to delete memory");
+    }
+  };
+
+  const autoTagMemory = async (id: string) => {
+    setIsTagging(true);
+    try {
+      const response = await fetch(`/api/memories/${id}/auto-tag`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to generate tags");
+      }
+
+      const data = await response.json();
+      setMemoryTags((prev) => ({ ...prev, [id]: data.tags }));
+      toast.success("Tags generated!");
+    } catch (error) {
+      console.error("Failed to auto-tag:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to generate tags. Make sure OpenAI API key is configured.");
+    } finally {
+      setIsTagging(false);
     }
   };
 
@@ -676,7 +703,40 @@ export default function MemoryVaultPage() {
                     )}
                   </div>
 
+                  {/* AI-generated tags */}
+                  {memoryTags[selectedMemory.id] && (
+                    <div className="mb-4 p-3 rounded-xl bg-sage/10 border border-sage/20">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Tag className="w-4 h-4 text-sage" />
+                        <span className="text-xs font-medium text-sage-dark">AI-Generated Tags</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {memoryTags[selectedMemory.id].map((tag, i) => (
+                          <span
+                            key={i}
+                            className="px-2 py-1 text-xs rounded-full bg-sage/20 text-sage-dark"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="mt-auto flex gap-3">
+                    <Button
+                      variant="outline"
+                      className="border-sage/30 hover:bg-sage/10 hover:border-sage"
+                      onClick={() => autoTagMemory(selectedMemory.id)}
+                      disabled={isTagging || !!memoryTags[selectedMemory.id]}
+                    >
+                      {isTagging ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-4 h-4 mr-2" />
+                      )}
+                      {memoryTags[selectedMemory.id] ? "Tagged" : "Auto-Tag"}
+                    </Button>
                     <Button
                       variant="outline"
                       className="flex-1 border-sage/30 hover:bg-sage/10 hover:border-sage"

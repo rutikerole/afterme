@@ -235,6 +235,8 @@ export default function StoriesPage() {
   const [completedStories, setCompletedStories] = useState<StoryPrompt[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [summarizingId, setSummarizingId] = useState<string | null>(null);
+  const [summaries, setSummaries] = useState<Record<string, string>>({});
 
   // Fetch stories on mount
   useEffect(() => {
@@ -331,6 +333,29 @@ export default function StoriesPage() {
     } catch (error) {
       console.error("Failed to delete story:", error);
       toast.error("Failed to delete story");
+    }
+  };
+
+  const summarizeStory = async (storyId: string) => {
+    setSummarizingId(storyId);
+    try {
+      const response = await fetch(`/api/stories/${storyId}/summarize`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to generate summary");
+      }
+
+      const data = await response.json();
+      setSummaries((prev) => ({ ...prev, [storyId]: data.summary }));
+      toast.success("Summary generated!");
+    } catch (error) {
+      console.error("Failed to summarize:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to generate summary. Make sure OpenAI API key is configured.");
+    } finally {
+      setSummarizingId(null);
     }
   };
 
@@ -513,13 +538,38 @@ export default function StoriesPage() {
                           &quot;{story.response.content}&quot;
                         </p>
                       )}
+
+                      {/* AI Summary */}
+                      {summaries[story.id] && (
+                        <div className="mt-3 p-3 rounded-xl bg-sage/10 border border-sage/20">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Sparkles className="w-3 h-3 text-sage" />
+                            <span className="text-xs font-medium text-sage-dark">AI Summary</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">{summaries[story.id]}</p>
+                        </div>
+                      )}
                     </div>
-                    <button
-                      onClick={() => story.response?.storyId && deleteStory(story.response.storyId)}
-                      className="p-2 rounded-full opacity-0 group-hover:opacity-100 hover:bg-rose-50 text-muted-foreground hover:text-rose-600 transition-all"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex flex-col gap-1">
+                      <button
+                        onClick={() => summarizeStory(story.id)}
+                        disabled={summarizingId === story.id || !!summaries[story.id]}
+                        className="p-2 rounded-full opacity-0 group-hover:opacity-100 hover:bg-sage/10 text-muted-foreground hover:text-sage-dark transition-all disabled:opacity-50"
+                        title={summaries[story.id] ? "Already summarized" : "Generate AI summary"}
+                      >
+                        {summarizingId === story.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-4 h-4" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => story.response?.storyId && deleteStory(story.response.storyId)}
+                        className="p-2 rounded-full opacity-0 group-hover:opacity-100 hover:bg-rose-50 text-muted-foreground hover:text-rose-600 transition-all"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               );

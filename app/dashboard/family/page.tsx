@@ -29,7 +29,10 @@ import {
   ChevronRight,
   Settings,
   MessageCircle,
+  LayoutGrid,
+  Network,
 } from "lucide-react";
+import FamilyTreeVisualization from "@/components/family/FamilyTreeVisualization";
 import { Button } from "@/components/ui/button";
 import {
   trustedCircleApi,
@@ -149,10 +152,11 @@ const HeartDecoration = ({ className, style }: { className?: string; style?: Rea
 
 export default function TrustedCirclePage() {
   const searchParams = useSearchParams();
-  const { refreshPendingInvites } = useAuth();
+  const { user, refreshPendingInvites } = useAuth();
 
   // State
   const [activeTab, setActiveTab] = useState<TabType>("circle");
+  const [viewMode, setViewMode] = useState<"list" | "tree">("list");
   const [isLoading, setIsLoading] = useState(true);
   const [connections, setConnections] = useState<TrustedConnection[]>([]);
   const [sentInvites, setSentInvites] = useState<TrustedCircleInvite[]>([]);
@@ -405,13 +409,72 @@ export default function TrustedCirclePage() {
               ) : (
                 <AnimatePresence mode="wait">
                   {activeTab === "circle" && (
-                    <CircleTab
+                    <motion.div
                       key="circle"
-                      connections={connections}
-                      onRefresh={fetchData}
-                      onEditPermissions={setShowPermissionsModal}
-                      onInvite={() => setShowInviteModal(true)}
-                    />
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                    >
+                      {/* View Toggle */}
+                      {connections.length > 0 && (
+                        <div className="flex justify-end mb-4">
+                          <div className="flex items-center gap-1 p-1 bg-sage-light/30 border border-sage/10 rounded-xl">
+                            <button
+                              onClick={() => setViewMode("list")}
+                              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all ${
+                                viewMode === "list"
+                                  ? "bg-white shadow-sm text-sage-dark"
+                                  : "hover:bg-white/50 text-muted-foreground"
+                              }`}
+                            >
+                              <LayoutGrid className="w-4 h-4" />
+                              List
+                            </button>
+                            <button
+                              onClick={() => setViewMode("tree")}
+                              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all ${
+                                viewMode === "tree"
+                                  ? "bg-white shadow-sm text-sage-dark"
+                                  : "hover:bg-white/50 text-muted-foreground"
+                              }`}
+                            >
+                              <Network className="w-4 h-4" />
+                              Tree View
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {viewMode === "list" ? (
+                        <CircleTab
+                          connections={connections}
+                          onRefresh={fetchData}
+                          onEditPermissions={setShowPermissionsModal}
+                          onInvite={() => setShowInviteModal(true)}
+                        />
+                      ) : (
+                        <div className="rounded-3xl bg-gradient-to-br from-card to-sage-light/10 border border-sage/20 p-6 overflow-hidden">
+                          <FamilyTreeVisualization
+                            members={connections.map((c) => ({
+                              id: c.id,
+                              name: c.connectedUser?.name || c.connectedUserEmail,
+                              relationship: c.relationship,
+                              avatar: c.connectedUser?.avatar || undefined,
+                              isConnected: true,
+                              email: c.connectedUserEmail,
+                            }))}
+                            currentUser={{
+                              name: user?.name || "You",
+                              avatar: user?.avatar || undefined,
+                            }}
+                            onMemberClick={(member) => {
+                              const connection = connections.find((c) => c.id === member.id);
+                              if (connection) setShowPermissionsModal(connection);
+                            }}
+                          />
+                        </div>
+                      )}
+                    </motion.div>
                   )}
                   {activeTab === "invites" && (
                     <InvitesTab

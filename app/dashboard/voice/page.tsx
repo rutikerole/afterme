@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Mic,
   Square,
@@ -17,6 +17,8 @@ import {
   Waves,
   MessageCircle,
   Loader2,
+  FileText,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { voiceMessagesApi, blobToBase64, type VoiceMessage } from "@/lib/api";
@@ -114,6 +116,8 @@ export default function VoiceVaultPage() {
   const [audioLevels, setAudioLevels] = useState<number[]>(Array(20).fill(0));
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [transcribingId, setTranscribingId] = useState<string | null>(null);
+  const [transcripts, setTranscripts] = useState<Record<string, string>>({});
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -304,6 +308,29 @@ export default function VoiceVaultPage() {
     } catch (error) {
       console.error("Failed to delete recording:", error);
       toast.error("Failed to delete recording");
+    }
+  };
+
+  const transcribeRecording = async (id: string) => {
+    setTranscribingId(id);
+    try {
+      const response = await fetch(`/api/voice-messages/${id}/transcribe`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to transcribe");
+      }
+
+      const data = await response.json();
+      setTranscripts((prev) => ({ ...prev, [id]: data.transcript }));
+      toast.success("Transcription complete!");
+    } catch (error) {
+      console.error("Failed to transcribe:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to transcribe. Make sure OpenAI API key is configured.");
+    } finally {
+      setTranscribingId(null);
     }
   };
 
@@ -617,6 +644,20 @@ export default function VoiceVaultPage() {
                           variant="ghost"
                           size="icon"
                           className="text-muted-foreground hover:text-sage-dark hover:bg-sage/10"
+                          onClick={() => transcribeRecording(recording.id)}
+                          disabled={transcribingId === recording.id || !!transcripts[recording.id]}
+                          title={transcripts[recording.id] ? "Already transcribed" : "Transcribe with AI"}
+                        >
+                          {transcribingId === recording.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Sparkles className="w-4 h-4" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-sage-dark hover:bg-sage/10"
                           asChild
                         >
                           <a href={recording.audioUrl} download={`${recording.name}.webm`}>
@@ -647,6 +688,23 @@ export default function VoiceVaultPage() {
                           animate={{ width: "100%" }}
                           transition={{ duration: recording.duration, ease: "linear" }}
                         />
+                      </motion.div>
+                    )}
+
+                    {/* Transcript display */}
+                    {transcripts[recording.id] && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        className="mt-4 p-3 rounded-xl bg-sage/10 border border-sage/20"
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <FileText className="w-4 h-4 text-sage" />
+                          <span className="text-xs font-medium text-sage-dark">AI Transcript</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground italic">
+                          &quot;{transcripts[recording.id]}&quot;
+                        </p>
                       </motion.div>
                     )}
                   </motion.div>
