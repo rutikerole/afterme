@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { getVapidPublicKey, PushSubscription } from "@/lib/push-notifications";
+import { getVapidPublicKey } from "@/lib/push-notifications";
 import { z } from "zod";
 
 const subscriptionSchema = z.object({
@@ -10,6 +10,8 @@ const subscriptionSchema = z.object({
     p256dh: z.string(),
     auth: z.string(),
   }),
+  userAgent: z.string().optional(),
+  deviceName: z.string().optional(),
 });
 
 // GET - Get VAPID public key for client subscription
@@ -17,13 +19,15 @@ export async function GET() {
   const publicKey = getVapidPublicKey();
 
   if (!publicKey) {
-    return NextResponse.json(
-      { error: "Push notifications not configured" },
-      { status: 503 }
-    );
+    // Return a placeholder in development mode
+    return NextResponse.json({
+      publicKey: null,
+      configured: false,
+      message: "Push notifications not configured. Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.",
+    });
   }
 
-  return NextResponse.json({ publicKey });
+  return NextResponse.json({ publicKey, configured: true });
 }
 
 // POST - Subscribe to push notifications
@@ -37,21 +41,27 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const subscription = subscriptionSchema.parse(body);
 
-    // Store subscription in user settings or a dedicated table
-    // For now, we'll store it in user settings as JSON
-    await prisma.userSettings.upsert({
-      where: { userId: user.id },
+    // Store or update subscription in database
+    await prisma.pushSubscription.upsert({
+      where: { endpoint: subscription.endpoint },
       create: {
         userId: user.id,
-        // Store push subscription in a JSON field (you may need to add this to schema)
+        endpoint: subscription.endpoint,
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth,
+        userAgent: subscription.userAgent,
+        deviceName: subscription.deviceName,
       },
       update: {
-        // Update push subscription
+        userId: user.id,
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth,
+        userAgent: subscription.userAgent,
+        deviceName: subscription.deviceName,
+        isActive: true,
+        updatedAt: new Date(),
       },
     });
-
-    // For now, we'll just acknowledge the subscription
-    // In a full implementation, you'd store this in a PushSubscription table
 
     console.log(`[Push] User ${user.id} subscribed to push notifications`);
 
@@ -82,8 +92,23 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Remove subscription from storage
-    // In a full implementation, you'd delete from PushSubscription table
+    const body = await request.json().catch(() => ({}));
+    const endpoint = body.endpoint;
+
+    if (endpoint) {
+      // Delete specific subscription
+      await prisma.pushSubscription.deleteMany({
+        where: {
+          userId: user.id,
+          endpoint: endpoint,
+        },
+      });
+    } else {
+      // Delete all subscriptions for user
+      await prisma.pushSubscription.deleteMany({
+        where: { userId: user.id },
+      });
+    }
 
     console.log(`[Push] User ${user.id} unsubscribed from push notifications`);
 

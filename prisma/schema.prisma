@@ -927,3 +927,31 @@ model ScheduledMessage {
   @@index([status])
   @@map("scheduled_messages")
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// PUSH NOTIFICATIONS
+// ════════════════════════════════════════════════════════════════════════════
+
+model PushSubscription {
+  id              String    @id @default(cuid())
+  userId          String
+
+  // Web Push subscription data
+  endpoint        String    @unique
+  p256dh          String    // Key for encryption
+  auth            String    // Auth secret
+
+  // Device info
+  userAgent       String?
+  deviceName      String?
+
+  // Status
+  isActive        Boolean   @default(true)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([endpoint])
+  @@map("push_subscriptions")
+}
