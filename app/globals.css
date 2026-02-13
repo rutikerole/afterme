@@ -173,66 +173,66 @@ body {
   }
 
   .dark {
-    /* Warm dark background - like aged parchment in candlelight */
-    --background: 30 15% 8%;
-    --foreground: 40 25% 90%;
+    /* Premium sage-tinted dark background */
+    --background: 100 8% 9%;
+    --foreground: 80 15% 92%;
 
-    /* Cards - warm dark with subtle warmth */
-    --card: 30 12% 12%;
-    --card-foreground: 40 25% 90%;
+    /* Cards with subtle sage undertone - premium feel */
+    --card: 100 6% 13%;
+    --card-foreground: 80 15% 92%;
 
-    --popover: 30 12% 12%;
-    --popover-foreground: 40 25% 90%;
+    --popover: 100 6% 13%;
+    --popover-foreground: 80 15% 92%;
 
-    /* Sage green stays warm and vibrant */
-    --primary: 100 30% 45%;
-    --primary-foreground: 40 25% 95%;
+    /* Vibrant sage green - the star of the show */
+    --primary: 100 40% 50%;
+    --primary-foreground: 100 8% 9%;
 
-    /* Warm secondary tones */
-    --secondary: 35 15% 18%;
-    --secondary-foreground: 40 20% 85%;
+    /* Secondary with sage tint */
+    --secondary: 100 8% 18%;
+    --secondary-foreground: 80 20% 88%;
 
-    /* Muted with warmth */
-    --muted: 30 10% 15%;
-    --muted-foreground: 40 15% 55%;
+    /* Muted with sage undertone */
+    --muted: 100 6% 16%;
+    --muted-foreground: 80 10% 55%;
 
-    /* Warm amber accent */
-    --accent: 38 50% 45%;
-    --accent-foreground: 40 25% 95%;
+    /* Warm amber accent for highlights */
+    --accent: 45 60% 55%;
+    --accent-foreground: 100 8% 9%;
 
-    --destructive: 0 45% 40%;
-    --destructive-foreground: 40 25% 95%;
+    --destructive: 0 50% 45%;
+    --destructive-foreground: 80 15% 95%;
 
-    /* Warm borders */
-    --border: 35 12% 20%;
-    --input: 35 12% 20%;
-    --ring: 100 30% 45%;
+    /* Sage-tinted borders */
+    --border: 100 8% 22%;
+    --input: 100 8% 22%;
+    --ring: 100 40% 50%;
 
-    /* Custom tokens - warm dark variants */
-    --sage: 100 30% 45%;
-    --sage-light: 100 20% 25%;
-    --sage-dark: 100 35% 60%;
-    --cream: 30 15% 8%;
-    --cream-dark: 30 12% 12%;
-    --warm-gray: 35 10% 45%;
-    --slate: 40 25% 90%;
-    --amber: 38 50% 45%;
-    --rose-soft: 0 30% 45%;
+    /* Custom tokens - sage-forward dark variants */
+    --sage: 100 40% 50%;
+    --sage-light: 100 15% 25%;
+    --sage-dark: 100 45% 65%;
+    --cream: 100 8% 9%;
+    --cream-dark: 100 6% 13%;
+    --warm-gray: 100 5% 45%;
+    --slate: 80 15% 92%;
+    --amber: 45 60% 55%;
+    --rose-soft: 0 35% 50%;
 
-    /* Warm sidebar */
-    --sidebar-background: 30 12% 10%;
-    --sidebar-foreground: 40 25% 90%;
-    --sidebar-primary: 100 30% 45%;
-    --sidebar-primary-foreground: 40 25% 95%;
-    --sidebar-accent: 35 15% 18%;
-    --sidebar-accent-foreground: 40 20% 85%;
-    --sidebar-border: 35 12% 20%;
-    --sidebar-ring: 100 30% 45%;
+    /* Sidebar with sage presence */
+    --sidebar-background: 100 8% 11%;
+    --sidebar-foreground: 80 15% 92%;
+    --sidebar-primary: 100 40% 50%;
+    --sidebar-primary-foreground: 100 8% 9%;
+    --sidebar-accent: 100 8% 18%;
+    --sidebar-accent-foreground: 80 20% 88%;
+    --sidebar-border: 100 8% 22%;
+    --sidebar-ring: 100 40% 50%;
 
-    /* Warm shadows for dark mode */
-    --shadow-soft: 0 4px 20px -4px hsl(0 0% 0% / 0.4);
-    --shadow-card: 0 2px 12px -2px hsl(0 0% 0% / 0.3);
-    --shadow-elevated: 0 8px 30px -8px hsl(0 0% 0% / 0.5);
+    /* Premium shadows with sage glow */
+    --shadow-soft: 0 4px 20px -4px hsl(100 30% 5% / 0.5);
+    --shadow-card: 0 2px 12px -2px hsl(100 30% 5% / 0.4);
+    --shadow-elevated: 0 8px 30px -8px hsl(100 40% 10% / 0.4);
   }
 }
 
@@ -917,17 +917,17 @@ body {
   scrollbar-color: hsl(var(--sage) / 0.3) hsl(var(--muted) / 0.5);
 }
 
-/* Dark mode scrollbar */
+/* Dark mode scrollbar - sage tinted */
 .dark ::-webkit-scrollbar-track {
-  background: hsl(30 10% 12%);
+  background: hsl(100 6% 12%);
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: hsl(var(--sage) / 0.4);
+  background: hsl(var(--sage) / 0.5);
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--sage) / 0.6);
+  background: hsl(var(--sage) / 0.7);
 }
 
 /* Hide scrollbar utility */
@@ -955,54 +955,86 @@ body {
   -webkit-backdrop-filter: blur(8px);
 }
 
-/* Dark mode glass effects - warmer tint */
+/* Dark mode glass effects - sage tinted premium */
 .dark .glass-strong {
-  background: hsl(30 15% 10% / 0.85);
-  backdrop-filter: blur(20px) saturate(120%);
-  -webkit-backdrop-filter: blur(20px) saturate(120%);
+  background: hsl(100 8% 12% / 0.9);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid hsl(var(--sage) / 0.1);
 }
 
 .dark .glass-subtle {
-  background: hsl(30 15% 10% / 0.6);
+  background: hsl(100 8% 12% / 0.7);
+  border: 1px solid hsl(var(--sage) / 0.08);
 }
 
-/* Dark mode card hover - warm glow */
+/* Dark mode card hover - premium sage glow */
 .dark .card-hover:hover {
-  box-shadow: 0 20px 40px -15px hsl(var(--sage) / 0.15),
-              0 0 0 1px hsl(var(--sage) / 0.1);
+  box-shadow: 0 20px 40px -15px hsl(var(--sage) / 0.2),
+              0 0 0 1px hsl(var(--sage) / 0.15),
+              inset 0 1px 0 hsl(var(--sage) / 0.1);
 }
 
-/* Dark mode selection */
+/* Dark mode selection - sage highlight */
 .dark ::selection {
-  background: hsl(var(--sage) / 0.4);
-  color: hsl(40 25% 95%);
+  background: hsl(var(--sage) / 0.5);
+  color: hsl(80 15% 95%);
 }
 
-/* Dark mode focus ring */
+/* Dark mode focus ring - vibrant sage */
 .dark :focus-visible {
-  --tw-ring-color: hsl(var(--sage) / 0.6);
+  --tw-ring-color: hsl(var(--sage) / 0.7);
 }
 
-/* Dark mode gradient text */
+/* Dark mode gradient text - vibrant sage gradient */
 .dark .text-gradient {
-  background: linear-gradient(135deg, hsl(100 35% 55%) 0%, hsl(100 40% 70%) 100%);
+  background: linear-gradient(135deg, hsl(100 45% 55%) 0%, hsl(100 50% 70%) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Dark mode pulse glow */
+/* Dark mode pulse glow - sage glow */
 .dark .animate-pulse-glow {
   animation: pulse-glow-dark 3s ease-in-out infinite;
 }
 
 @keyframes pulse-glow-dark {
   0%, 100% {
-    box-shadow: 0 0 5px hsl(var(--sage) / 0.2), 0 0 10px hsl(var(--sage) / 0.1);
+    box-shadow: 0 0 5px hsl(var(--sage) / 0.3), 0 0 15px hsl(var(--sage) / 0.15);
   }
   50% {
-    box-shadow: 0 0 20px hsl(var(--sage) / 0.4), 0 0 40px hsl(var(--sage) / 0.2);
+    box-shadow: 0 0 25px hsl(var(--sage) / 0.5), 0 0 50px hsl(var(--sage) / 0.25);
   }
+}
+
+/* Premium dark mode enhancements */
+.dark .hover-lift:hover {
+  box-shadow: 0 12px 30px -8px hsl(var(--sage) / 0.25);
+}
+
+/* Dark mode buttons with sage glow on hover */
+.dark button:hover,
+.dark [role="button"]:hover {
+  box-shadow: 0 0 0 1px hsl(var(--sage) / 0.2);
+}
+
+/* Dark mode input focus glow */
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  box-shadow: 0 0 0 2px hsl(var(--sage) / 0.3);
+}
+
+/* Sage accent line for dark mode */
+.dark .border-t,
+.dark .border-b {
+  border-color: hsl(100 8% 22%);
+}
+
+/* Premium card styles for dark mode */
+.dark [class*="rounded-"] {
+  box-shadow: inset 0 1px 0 hsl(var(--sage) / 0.05);
 }
 
 /* ========================================
