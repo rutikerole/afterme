@@ -173,52 +173,66 @@ body {
   }
 
   .dark {
-    --background: 220 20% 10%;
-    --foreground: 40 20% 92%;
+    /* Warm dark background - like aged parchment in candlelight */
+    --background: 30 15% 8%;
+    --foreground: 40 25% 90%;
 
-    --card: 220 18% 14%;
-    --card-foreground: 40 20% 92%;
+    /* Cards - warm dark with subtle warmth */
+    --card: 30 12% 12%;
+    --card-foreground: 40 25% 90%;
 
-    --popover: 220 18% 14%;
-    --popover-foreground: 40 20% 92%;
+    --popover: 30 12% 12%;
+    --popover-foreground: 40 25% 90%;
 
-    --primary: 100 25% 50%;
-    --primary-foreground: 220 20% 10%;
+    /* Sage green stays warm and vibrant */
+    --primary: 100 30% 45%;
+    --primary-foreground: 40 25% 95%;
 
-    --secondary: 220 15% 20%;
-    --secondary-foreground: 40 20% 88%;
+    /* Warm secondary tones */
+    --secondary: 35 15% 18%;
+    --secondary-foreground: 40 20% 85%;
 
-    --muted: 220 15% 18%;
-    --muted-foreground: 40 10% 60%;
+    /* Muted with warmth */
+    --muted: 30 10% 15%;
+    --muted-foreground: 40 15% 55%;
 
-    --accent: 38 40% 55%;
-    --accent-foreground: 220 20% 10%;
+    /* Warm amber accent */
+    --accent: 38 50% 45%;
+    --accent-foreground: 40 25% 95%;
 
-    --destructive: 0 50% 45%;
-    --destructive-foreground: 40 20% 92%;
+    --destructive: 0 45% 40%;
+    --destructive-foreground: 40 25% 95%;
 
-    --border: 220 15% 22%;
-    --input: 220 15% 22%;
-    --ring: 100 25% 50%;
+    /* Warm borders */
+    --border: 35 12% 20%;
+    --input: 35 12% 20%;
+    --ring: 100 30% 45%;
 
-    --sage: 100 25% 50%;
-    --sage-light: 100 15% 20%;
-    --sage-dark: 100 25% 65%;
-    --cream: 220 20% 10%;
-    --cream-dark: 220 18% 16%;
-    --warm-gray: 30 8% 50%;
-    --slate: 40 20% 92%;
-    --amber: 38 40% 55%;
-    --rose-soft: 0 25% 55%;
+    /* Custom tokens - warm dark variants */
+    --sage: 100 30% 45%;
+    --sage-light: 100 20% 25%;
+    --sage-dark: 100 35% 60%;
+    --cream: 30 15% 8%;
+    --cream-dark: 30 12% 12%;
+    --warm-gray: 35 10% 45%;
+    --slate: 40 25% 90%;
+    --amber: 38 50% 45%;
+    --rose-soft: 0 30% 45%;
 
-    --sidebar-background: 220 18% 12%;
-    --sidebar-foreground: 40 20% 92%;
-    --sidebar-primary: 100 25% 50%;
-    --sidebar-primary-foreground: 220 20% 10%;
-    --sidebar-accent: 220 15% 20%;
-    --sidebar-accent-foreground: 40 20% 88%;
-    --sidebar-border: 220 15% 22%;
-    --sidebar-ring: 100 25% 50%;
+    /* Warm sidebar */
+    --sidebar-background: 30 12% 10%;
+    --sidebar-foreground: 40 25% 90%;
+    --sidebar-primary: 100 30% 45%;
+    --sidebar-primary-foreground: 40 25% 95%;
+    --sidebar-accent: 35 15% 18%;
+    --sidebar-accent-foreground: 40 20% 85%;
+    --sidebar-border: 35 12% 20%;
+    --sidebar-ring: 100 30% 45%;
+
+    /* Warm shadows for dark mode */
+    --shadow-soft: 0 4px 20px -4px hsl(0 0% 0% / 0.4);
+    --shadow-card: 0 2px 12px -2px hsl(0 0% 0% / 0.3);
+    --shadow-elevated: 0 8px 30px -8px hsl(0 0% 0% / 0.5);
   }
 }
 
@@ -903,6 +917,19 @@ body {
   scrollbar-color: hsl(var(--sage) / 0.3) hsl(var(--muted) / 0.5);
 }
 
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-track {
+  background: hsl(30 10% 12%);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: hsl(var(--sage) / 0.4);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--sage) / 0.6);
+}
+
 /* Hide scrollbar utility */
 .scrollbar-hide {
   -ms-overflow-style: none;
@@ -926,6 +953,56 @@ body {
   background: hsl(var(--background) / 0.4);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+}
+
+/* Dark mode glass effects - warmer tint */
+.dark .glass-strong {
+  background: hsl(30 15% 10% / 0.85);
+  backdrop-filter: blur(20px) saturate(120%);
+  -webkit-backdrop-filter: blur(20px) saturate(120%);
+}
+
+.dark .glass-subtle {
+  background: hsl(30 15% 10% / 0.6);
+}
+
+/* Dark mode card hover - warm glow */
+.dark .card-hover:hover {
+  box-shadow: 0 20px 40px -15px hsl(var(--sage) / 0.15),
+              0 0 0 1px hsl(var(--sage) / 0.1);
+}
+
+/* Dark mode selection */
+.dark ::selection {
+  background: hsl(var(--sage) / 0.4);
+  color: hsl(40 25% 95%);
+}
+
+/* Dark mode focus ring */
+.dark :focus-visible {
+  --tw-ring-color: hsl(var(--sage) / 0.6);
+}
+
+/* Dark mode gradient text */
+.dark .text-gradient {
+  background: linear-gradient(135deg, hsl(100 35% 55%) 0%, hsl(100 40% 70%) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Dark mode pulse glow */
+.dark .animate-pulse-glow {
+  animation: pulse-glow-dark 3s ease-in-out infinite;
+}
+
+@keyframes pulse-glow-dark {
+  0%, 100% {
+    box-shadow: 0 0 5px hsl(var(--sage) / 0.2), 0 0 10px hsl(var(--sage) / 0.1);
+  }
+  50% {
+    box-shadow: 0 0 20px hsl(var(--sage) / 0.4), 0 0 40px hsl(var(--sage) / 0.2);
+  }
 }
 
 /* ========================================
