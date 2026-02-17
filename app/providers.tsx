@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { type ReactNode } from "react";
-import { ThemeProvider } from "@/components/theme-provider";
 
 // Dynamic imports to prevent SSR issues
 const AuthProvider = dynamic(
@@ -17,14 +16,9 @@ const Toaster = dynamic(
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="system"
-      enableSystem
-      disableTransitionOnChange
-    >
+    <>
       <AuthProvider>{children}</AuthProvider>
       <Toaster />
-    </ThemeProvider>
+    </>
   );
 }

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Heart, LogOut, Bell, Search, Settings, Menu, X, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useAuth } from "@/lib/auth-context";
 
 interface DashboardHeaderProps {
@@ -153,9 +152,6 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
             >
               <Search className="w-5 h-5" />
             </Button>
-
-            {/* Theme Toggle */}
-            <ThemeToggle />
 
             {/* Notifications */}
             <div className="relative" ref={notificationRef}>

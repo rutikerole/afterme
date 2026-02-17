@@ -42,7 +42,8 @@
       "Bash(npx @sentry/wizard@latest:*)",
       "Bash(npx vercel:*)",
       "Bash(npm i:*)",
-      "Bash(npx web-push generate-vapid-keys)"
+      "Bash(npx web-push generate-vapid-keys)",
+      "Bash(timeout /t 90 /nobreak)"
     ]
   }
 }
