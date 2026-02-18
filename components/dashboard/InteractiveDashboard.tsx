@@ -695,36 +695,87 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════════
-          QUICK STATS BAR
+          QUICK STATS BAR - Connected Theme Design
       ══════════════════════════════════════════════════════════════════ */}
-      <section className="px-6 py-8">
+      <section className="px-6 py-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.5 }}
           className="max-w-5xl mx-auto"
         >
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { icon: Heart, label: "Memories", value: "156", color: "text-rose-500 bg-rose-50" },
-              { icon: Users, label: "Family Members", value: "4", color: "text-blue-500 bg-blue-50" },
-              { icon: Gift, label: "Scheduled", value: "12", color: "text-amber-500 bg-amber-50" },
-              { icon: Clock, label: "Days Active", value: "45", color: "text-sage bg-sage/10" },
-            ].map((stat, i) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.7 + i * 0.1 }}
-                className="p-5 bg-white/80 backdrop-blur-sm rounded-2xl border border-sage/10 shadow-sm text-center group hover:shadow-md hover:border-sage/20 transition-all"
-              >
-                <div className={`w-12 h-12 rounded-xl ${stat.color} flex items-center justify-center mx-auto mb-3`}>
-                  <stat.icon className="w-6 h-6" />
-                </div>
-                <p className="text-2xl font-serif font-semibold text-charcoal">{stat.value}</p>
-                <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
-              </motion.div>
-            ))}
+          {/* Section Header */}
+          <div className="flex items-center justify-center gap-3 mb-8">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-sage/20 to-sage/30" />
+            <div className="flex items-center gap-2 px-4">
+              <TrendingUp className="w-4 h-4 text-sage" />
+              <span className="text-sm font-medium text-sage uppercase tracking-wider">Your Legacy Progress</span>
+            </div>
+            <div className="h-px flex-1 bg-gradient-to-l from-transparent via-sage/20 to-sage/30" />
+          </div>
+
+          {/* Stats Container with connected design */}
+          <div className="relative p-6 bg-gradient-to-br from-white via-sage/5 to-cream rounded-3xl border border-sage/15 shadow-lg shadow-sage/5">
+            {/* Decorative corner accents */}
+            <div className="absolute top-3 left-3 w-8 h-8 border-l-2 border-t-2 border-sage/20 rounded-tl-xl" />
+            <div className="absolute top-3 right-3 w-8 h-8 border-r-2 border-t-2 border-sage/20 rounded-tr-xl" />
+            <div className="absolute bottom-3 left-3 w-8 h-8 border-l-2 border-b-2 border-sage/20 rounded-bl-xl" />
+            <div className="absolute bottom-3 right-3 w-8 h-8 border-r-2 border-b-2 border-sage/20 rounded-br-xl" />
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+              {[
+                { icon: Heart, label: "Memories", value: "156", subtext: "Preserved", gradient: "from-sage/15 to-sage/25" },
+                { icon: Users, label: "Family Circle", value: "4", subtext: "Members", gradient: "from-sage/10 to-sage-light/20" },
+                { icon: Gift, label: "Scheduled", value: "12", subtext: "Messages", gradient: "from-sage/15 to-sage/25" },
+                { icon: Clock, label: "Days Active", value: "45", subtext: "Building", gradient: "from-sage/10 to-sage-light/20" },
+              ].map((stat, i) => (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 + i * 0.1 }}
+                  className="relative group"
+                >
+                  {/* Connecting line between stats (hidden on mobile, shown between items) */}
+                  {i < 3 && (
+                    <div className="hidden md:block absolute top-1/2 -right-4 w-8 h-px bg-gradient-to-r from-sage/30 to-sage/10" />
+                  )}
+
+                  <div className="text-center">
+                    {/* Icon with sage gradient */}
+                    <motion.div
+                      whileHover={{ scale: 1.1, rotate: [0, -5, 5, 0] }}
+                      transition={{ duration: 0.3 }}
+                      className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center mx-auto mb-4 border border-sage/10 group-hover:border-sage/30 group-hover:shadow-lg group-hover:shadow-sage/15 transition-all duration-300`}
+                    >
+                      <stat.icon className="w-6 h-6 text-sage-dark group-hover:text-sage transition-colors" />
+                    </motion.div>
+
+                    {/* Value with animation */}
+                    <motion.p
+                      initial={{ scale: 0.8 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.8 + i * 0.1, type: "spring" }}
+                      className="text-3xl font-serif font-semibold text-charcoal group-hover:text-sage-dark transition-colors"
+                    >
+                      {stat.value}
+                    </motion.p>
+
+                    {/* Label */}
+                    <p className="text-sm font-medium text-charcoal/80 mt-1">{stat.label}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{stat.subtext}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Bottom decorative element */}
+            <div className="flex items-center justify-center mt-6 pt-4 border-t border-sage/10">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Leaf className="w-3 h-3 text-sage" />
+                <span>Growing stronger every day</span>
+              </div>
+            </div>
           </div>
         </motion.div>
       </section>
