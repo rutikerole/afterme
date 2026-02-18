@@ -5,28 +5,21 @@ import { motion, useInView } from "framer-motion";
 import Link from "next/link";
 import {
   Mic,
-  BookOpen,
   Heart,
-  ArrowRight,
-  Check,
   Sparkles,
+  BookOpen,
   TrendingUp,
-  Quote,
+  Plus,
+  Leaf,
 } from "lucide-react";
 
-// Centralized constants and utilities
 import {
   PILLARS,
-  FLOATING_DOTS,
   MEMORY_PROMPTS,
-  INSPIRATIONAL_QUOTES,
-  type Pillar,
 } from "@/lib/constants";
 import {
   getGreetingByHour,
   calculateOverallProgress,
-  getCompletedPillars,
-  getNextIncompletePillar,
   getFirstName,
   getDailyItem,
 } from "@/lib/utils";
@@ -36,162 +29,9 @@ interface DashboardProps {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// ARTISTIC SVG DECORATIONS
+// CENTRAL LEGACY HUB - The heart of the dashboard
 // ════════════════════════════════════════════════════════════════════════════
-
-// Floating Leaf decoration with variants
-const FloatingLeaf = ({ className, style, size = 40, variant = 1 }: { className?: string; style?: React.CSSProperties; size?: number; variant?: number }) => {
-  const paths = [
-    "M20 2C20 2 8 12 8 24C8 32 13 38 20 38C27 38 32 32 32 24C32 12 20 2 20 2Z",
-    "M20 2C15 8 8 15 8 24C8 30 12 36 20 38C28 36 32 30 32 24C32 15 25 8 20 2ZM20 10C18 15 15 20 15 25M20 10C22 15 25 20 25 25",
-    "M20 5C12 10 8 18 10 28C12 35 16 38 20 38C24 38 28 35 30 28C32 18 28 10 20 5Z",
-  ];
-
-  return (
-    <svg className={className} style={style} width={size} height={size} viewBox="0 0 40 40" fill="none">
-      <path
-        d={paths[(variant - 1) % 3]}
-        fill="hsl(var(--sage))"
-        fillOpacity="0.3"
-        stroke="hsl(var(--sage))"
-        strokeWidth="1.5"
-        strokeOpacity="0.6"
-      />
-      <path
-        d="M20 8V32M20 14L14 20M20 20L26 26"
-        stroke="hsl(var(--sage))"
-        strokeWidth="1"
-        strokeOpacity="0.5"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-};
-
-// Sparkle decoration
-const SparkleDecor = ({ className, style, size = 20 }: { className?: string; style?: React.CSSProperties; size?: number }) => (
-  <svg className={className} style={style} width={size} height={size} viewBox="0 0 20 20" fill="none">
-    <path
-      d="M10 0L11.5 8.5L20 10L11.5 11.5L10 20L8.5 11.5L0 10L8.5 8.5L10 0Z"
-      fill="hsl(var(--sage))"
-      fillOpacity="0.5"
-    />
-  </svg>
-);
-
-// Gentle rings decoration
-const GentleRings = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
-  <svg className={className} style={style} width="80" height="80" viewBox="0 0 80 80" fill="none">
-    <circle cx="40" cy="40" r="35" stroke="hsl(var(--sage))" strokeWidth="1" strokeOpacity="0.2" strokeDasharray="5 5" className="animate-rotate-gentle" style={{ transformOrigin: 'center' }} />
-    <circle cx="40" cy="40" r="25" stroke="hsl(var(--sage))" strokeWidth="1.5" strokeOpacity="0.3" className="animate-rotate-gentle" style={{ transformOrigin: 'center', animationDirection: 'reverse', animationDuration: '25s' }} />
-    <circle cx="40" cy="40" r="15" fill="hsl(var(--sage))" fillOpacity="0.08" />
-  </svg>
-);
-
-// ════════════════════════════════════════════════════════════════════════════
-// DECORATIVE BACKGROUND
-// ════════════════════════════════════════════════════════════════════════════
-function DecorativeBackground() {
-  return (
-    <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-      {/* Morphing background blobs - smaller on mobile to prevent overflow */}
-      <div className="absolute top-0 left-1/4 w-[300px] md:w-[600px] h-[300px] md:h-[600px] bg-sage/12 rounded-full blur-[80px] md:blur-[120px] animate-blob-morph" />
-      <div className="absolute bottom-0 right-1/4 w-[250px] md:w-[500px] h-[250px] md:h-[500px] bg-sage-light/20 rounded-full blur-[60px] md:blur-[100px] animate-blob-morph" style={{ animationDelay: "-5s" }} />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] md:w-[800px] h-[400px] md:h-[800px] bg-sage/5 rounded-full blur-[80px] md:blur-[150px] animate-blob-morph" style={{ animationDelay: "-10s" }} />
-      <div className="absolute top-1/3 right-1/3 w-[200px] md:w-[400px] h-[200px] md:h-[400px] bg-sage/8 rounded-full blur-[40px] md:blur-[80px] animate-blob-morph" style={{ animationDelay: "-3s" }} />
-
-      {/* Floating Leaves with varied animations - hidden on very small screens for performance */}
-      <FloatingLeaf className="absolute top-24 left-[8%] animate-float-rotate opacity-50 hidden sm:block" style={{ animationDuration: "10s" }} size={45} variant={1} />
-      <FloatingLeaf className="absolute top-[35%] right-[5%] animate-sway opacity-45 hidden md:block" style={{ animationDuration: "6s" }} size={40} variant={2} />
-      <FloatingLeaf className="absolute bottom-[25%] left-[5%] animate-drift opacity-40 hidden sm:block" style={{ animationDuration: "12s" }} size={50} variant={3} />
-      <FloatingLeaf className="absolute top-[15%] right-[20%] animate-swing opacity-35 hidden lg:block" style={{ animationDuration: "4s" }} size={35} variant={1} />
-      <FloatingLeaf className="absolute bottom-[45%] right-[10%] animate-wave opacity-30 hidden md:block" style={{ animationDuration: "7s" }} size={38} variant={2} />
-      <FloatingLeaf className="absolute top-[55%] left-[12%] animate-float opacity-35 hidden lg:block" style={{ animationDuration: "9s", animationDelay: "2s" }} size={42} variant={3} />
-      <FloatingLeaf className="absolute bottom-[15%] right-[25%] animate-float-rotate opacity-25 hidden md:block" style={{ animationDuration: "11s", animationDelay: "1s" }} size={32} variant={1} />
-      <FloatingLeaf className="absolute top-[70%] left-[30%] animate-sway opacity-30 hidden lg:block" style={{ animationDuration: "8s", animationDelay: "3s" }} size={36} variant={2} />
-
-      {/* Sparkles - reduced on mobile */}
-      <SparkleDecor className="absolute top-32 left-[25%] animate-twinkle opacity-55 hidden sm:block" style={{ animationDelay: "0s" }} size={16} />
-      <SparkleDecor className="absolute top-[45%] right-[25%] animate-twinkle opacity-50" style={{ animationDelay: "0.5s" }} size={20} />
-      <SparkleDecor className="absolute bottom-28 right-[40%] animate-twinkle opacity-45 hidden md:block" style={{ animationDelay: "1s" }} size={14} />
-      <SparkleDecor className="absolute top-[20%] left-[40%] animate-twinkle opacity-40 hidden lg:block" style={{ animationDelay: "1.5s" }} size={18} />
-      <SparkleDecor className="absolute bottom-[40%] left-[32%] animate-twinkle opacity-35 hidden md:block" style={{ animationDelay: "2s" }} size={12} />
-      <SparkleDecor className="absolute top-[60%] right-[15%] animate-twinkle opacity-45 hidden sm:block" style={{ animationDelay: "0.8s" }} size={15} />
-
-      {/* Firefly particles - reduced on mobile */}
-      <div className="absolute top-32 left-[28%] w-3 h-3 rounded-full bg-sage/45 animate-firefly hidden sm:block" style={{ animationDuration: "8s" }} />
-      <div className="absolute top-[48%] right-[28%] w-4 h-4 rounded-full bg-sage/35 animate-firefly" style={{ animationDuration: "10s", animationDelay: "2s" }} />
-      <div className="absolute bottom-28 right-[42%] w-3 h-3 rounded-full bg-sage/40 animate-firefly hidden md:block" style={{ animationDuration: "9s", animationDelay: "4s" }} />
-      <div className="absolute top-[65%] left-[18%] w-2 h-2 rounded-full bg-sage/30 animate-firefly hidden md:block" style={{ animationDuration: "7s", animationDelay: "1s" }} />
-      <div className="absolute top-[30%] right-[38%] w-3 h-3 rounded-full bg-sage/25 animate-firefly hidden lg:block" style={{ animationDuration: "11s", animationDelay: "3s" }} />
-
-      {/* Gentle rings - hidden on mobile */}
-      <GentleRings className="absolute top-[12%] left-[15%] opacity-25 hidden md:block" />
-      <GentleRings className="absolute bottom-[18%] right-[10%] opacity-20 hidden lg:block" style={{ transform: 'scale(0.7)' }} />
-      <GentleRings className="absolute top-[50%] right-[5%] opacity-15 hidden lg:block" style={{ transform: 'scale(0.5)' }} />
-
-      {/* Decorative animated wavy lines */}
-      <svg className="absolute top-12 left-0 w-full h-32 opacity-20" viewBox="0 0 1200 120" preserveAspectRatio="none">
-        <path d="M0,60 Q200,20 400,60 T800,60 T1200,60" fill="none" stroke="hsl(var(--sage))" strokeWidth="2" className="animate-line-flow" />
-        <path d="M0,80 Q300,40 600,80 T1200,80" fill="none" stroke="hsl(var(--sage))" strokeWidth="1.5" strokeOpacity="0.6" className="animate-line-flow" style={{ animationDelay: "-2s" }} />
-      </svg>
-      <svg className="absolute bottom-20 left-0 w-full h-24 opacity-15" viewBox="0 0 1200 100" preserveAspectRatio="none">
-        <path d="M0,50 C200,20 400,80 600,50 C800,20 1000,80 1200,50" fill="none" stroke="hsl(var(--sage))" strokeWidth="2" className="animate-line-flow" style={{ animationDirection: "reverse" }} />
-      </svg>
-
-      {/* Spinning decorative circles */}
-      <svg className="absolute top-20 right-20 w-32 h-32 text-sage/15 animate-rotate-gentle" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="0.5" strokeDasharray="4 4" />
-      </svg>
-      <svg className="absolute bottom-32 left-20 w-24 h-24 text-sage/12 animate-rotate-gentle" style={{ animationDirection: "reverse", animationDuration: "25s" }} viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" strokeWidth="0.5" />
-      </svg>
-
-      {/* Floating dots */}
-      {FLOATING_DOTS.map((dot, i) => (
-        <div
-          key={i}
-          className={`absolute ${dot.size} ${dot.opacity} rounded-full animate-float`}
-          style={{
-            top: dot.top,
-            left: dot.left,
-            right: dot.right,
-            bottom: dot.bottom,
-            animationDelay: `${dot.delay}s`
-          }}
-        />
-      ))}
-
-      {/* Ripple circles */}
-      <div className="absolute top-[35%] left-[45%] w-32 h-32 rounded-full border border-sage/15 animate-ripple" style={{ animationDuration: "4s" }} />
-      <div className="absolute top-[35%] left-[45%] w-32 h-32 rounded-full border border-sage/15 animate-ripple" style={{ animationDuration: "4s", animationDelay: "1.3s" }} />
-      <div className="absolute top-[35%] left-[45%] w-32 h-32 rounded-full border border-sage/15 animate-ripple" style={{ animationDuration: "4s", animationDelay: "2.6s" }} />
-
-      {/* Corner decorative lines */}
-      <div className="absolute top-0 left-0 w-32 h-32">
-        <div className="absolute top-8 left-0 w-16 h-px bg-gradient-to-r from-sage/40 to-transparent" />
-        <div className="absolute top-0 left-8 w-px h-16 bg-gradient-to-b from-sage/40 to-transparent" />
-      </div>
-      <div className="absolute top-0 right-0 w-32 h-32">
-        <div className="absolute top-8 right-0 w-16 h-px bg-gradient-to-l from-sage/40 to-transparent" />
-        <div className="absolute top-0 right-8 w-px h-16 bg-gradient-to-b from-sage/40 to-transparent" />
-      </div>
-      <div className="absolute bottom-0 left-0 w-32 h-32">
-        <div className="absolute bottom-8 left-0 w-16 h-px bg-gradient-to-r from-sage/30 to-transparent" />
-        <div className="absolute bottom-0 left-8 w-px h-16 bg-gradient-to-t from-sage/30 to-transparent" />
-      </div>
-      <div className="absolute bottom-0 right-0 w-32 h-32">
-        <div className="absolute bottom-8 right-0 w-16 h-px bg-gradient-to-l from-sage/30 to-transparent" />
-        <div className="absolute bottom-0 right-8 w-px h-16 bg-gradient-to-t from-sage/30 to-transparent" />
-      </div>
-    </div>
-  );
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// PROGRESS RING COMPONENT
-// ════════════════════════════════════════════════════════════════════════════
-function ProgressRing({ progress }: { progress: number }) {
+function LegacyHub({ progress }: { progress: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true });
   const [displayProgress, setDisplayProgress] = useState(0);
@@ -207,160 +47,188 @@ function ProgressRing({ progress }: { progress: number }) {
       } else {
         setDisplayProgress(current);
       }
-    }, 30);
+    }, 25);
     return () => clearInterval(interval);
   }, [isInView, progress]);
 
-  const size = 200;
-  const strokeWidth = 6;
+  const size = 220;
+  const strokeWidth = 8;
   const radius = (size - strokeWidth * 2) / 2;
   const circumference = radius * 2 * Math.PI;
 
   return (
-    <div
+    <motion.div
       ref={ref}
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
       className="relative"
-      style={{ width: size, height: size }}
-      role="progressbar"
-      aria-valuenow={displayProgress}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-label="Overall legacy progress"
     >
-      {/* Soft glow behind - CSS based for cleaner rendering */}
-      <div className="absolute inset-4 bg-sage/10 rounded-full blur-[25px]" aria-hidden="true" />
-
-      <svg
-        className="relative transform -rotate-90"
-        width={size}
-        height={size}
-        style={{ overflow: 'visible' }}
-        aria-hidden="true"
-      >
-        <defs>
-          <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="hsl(var(--sage))" />
-            <stop offset="100%" stopColor="hsl(var(--sage-dark))" />
-          </linearGradient>
-        </defs>
-
-        {/* Background ring - clean and simple */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="hsl(var(--sage) / 0.12)"
-          strokeWidth={strokeWidth}
+      {/* Outer glow rings */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <motion.div
+          animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
+          transition={{ duration: 4, repeat: Infinity }}
+          className="absolute w-[280px] h-[280px] rounded-full border border-sage/20"
         />
-
-        {/* Progress ring - no filter for clean edges */}
-        <motion.circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="url(#progressGradient)"
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          initial={{ strokeDashoffset: circumference }}
-          animate={isInView ? { strokeDashoffset: circumference - (circumference * progress) / 100 } : {}}
-          transition={{ duration: 2, ease: [0.16, 1, 0.3, 1] }}
+        <motion.div
+          animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.4, 0.2] }}
+          transition={{ duration: 5, repeat: Infinity, delay: 1 }}
+          className="absolute w-[320px] h-[320px] rounded-full border border-sage/10"
         />
-      </svg>
-
-      {/* Center content */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-5xl font-serif font-medium text-sage-dark">{displayProgress}</span>
-        <span className="text-sage/60 text-xs tracking-[0.2em] uppercase mt-1">percent</span>
+        <div className="absolute w-[360px] h-[360px] rounded-full bg-sage/5 blur-3xl" />
       </div>
-    </div>
+
+      {/* Main hub container */}
+      <div
+        className="relative rounded-full bg-gradient-to-br from-white via-white to-sage-light/30 shadow-2xl shadow-sage/20 border border-sage/20 flex items-center justify-center"
+        style={{ width: size + 40, height: size + 40 }}
+      >
+        {/* Progress ring */}
+        <svg
+          className="absolute transform -rotate-90"
+          width={size}
+          height={size}
+          style={{ overflow: 'visible' }}
+        >
+          <defs>
+            <linearGradient id="hubGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="hsl(var(--sage))" />
+              <stop offset="100%" stopColor="hsl(var(--sage-dark))" />
+            </linearGradient>
+          </defs>
+
+          {/* Background ring */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="hsl(var(--sage) / 0.1)"
+            strokeWidth={strokeWidth}
+          />
+
+          {/* Progress ring */}
+          <motion.circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="url(#hubGradient)"
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            initial={{ strokeDashoffset: circumference }}
+            animate={isInView ? { strokeDashoffset: circumference - (circumference * progress) / 100 } : {}}
+            transition={{ duration: 2, ease: [0.16, 1, 0.3, 1], delay: 0.5 }}
+          />
+        </svg>
+
+        {/* Center content */}
+        <div className="relative z-10 flex flex-col items-center justify-center text-center">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+            className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sage to-sage-dark flex items-center justify-center mb-3 shadow-lg shadow-sage/30"
+          >
+            <Leaf className="w-7 h-7 text-white" />
+          </motion.div>
+
+          <p className="text-[10px] uppercase tracking-[0.2em] text-sage/70 mb-1">Legacy Strength</p>
+
+          <div className="flex items-baseline gap-1">
+            <span className="text-5xl font-serif font-semibold text-charcoal">{displayProgress}</span>
+            <span className="text-xl text-sage">%</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Nurture button */}
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 1.2 }}
+        className="absolute -bottom-6 left-1/2 -translate-x-1/2"
+      >
+        <Link href="/dashboard/progress">
+          <motion.button
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            className="flex items-center gap-2 px-5 py-2.5 bg-sage hover:bg-sage-dark text-white rounded-full text-sm font-medium shadow-lg shadow-sage/30 transition-colors"
+          >
+            <Leaf className="w-4 h-4" />
+            Nurture your Legacy
+          </motion.button>
+        </Link>
+      </motion.div>
+    </motion.div>
   );
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// PILLAR CARD COMPONENT
+// FLOATING PILLAR CARD - Scattered around the hub
 // ════════════════════════════════════════════════════════════════════════════
-function PillarCard({ pillar, index }: { pillar: Pillar; index: number }) {
+interface FloatingPillarProps {
+  pillar: typeof PILLARS[0];
+  position: { x: string; y: string };
+  delay: number;
+  size?: "sm" | "md" | "lg";
+}
+
+function FloatingPillar({ pillar, position, delay, size = "md" }: FloatingPillarProps) {
   const Icon = pillar.icon;
-  const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: "-50px" });
+
+  const sizeClasses = {
+    sm: "w-44 p-4",
+    md: "w-56 p-5",
+    lg: "w-64 p-6",
+  };
 
   return (
     <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 40 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.7, delay: index * 0.1, ease: [0.16, 1, 0.3, 1] }}
+      initial={{ opacity: 0, scale: 0.8, y: 20 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{ delay, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      className="absolute"
+      style={{ left: position.x, top: position.y }}
     >
-      <Link
-        href={pillar.href}
-        className="block group focus:outline-none focus-visible:ring-2 focus-visible:ring-sage focus-visible:ring-offset-2 rounded-3xl"
-        aria-label={`${pillar.name} - ${pillar.items} items, ${pillar.progress}% complete`}
-      >
+      <Link href={pillar.href}>
         <motion.div
-          whileHover={{ y: -8, scale: 1.02 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          className="relative p-8 rounded-3xl bg-white/60 backdrop-blur-sm border border-sage/20 hover:border-sage/40 transition-all duration-500 overflow-hidden"
+          whileHover={{ scale: 1.05, y: -5 }}
+          whileTap={{ scale: 0.98 }}
+          className={`${sizeClasses[size]} bg-white/90 backdrop-blur-sm rounded-2xl border border-sage/15 shadow-lg shadow-sage/10 hover:shadow-xl hover:shadow-sage/15 hover:border-sage/30 transition-all duration-300 cursor-pointer group`}
         >
-          {/* Hover gradient glow */}
-          <div className="absolute -inset-2 bg-gradient-to-br from-sage/20 via-sage-light/20 to-transparent rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-          {/* Decorative corner accent */}
-          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-sage/10 to-transparent rounded-bl-[60px]" />
-
-          {/* Icon with animation */}
-          <motion.div
-            whileHover={{ rotate: -8, scale: 1.1 }}
-            transition={{ type: "spring", stiffness: 300 }}
-            className="relative z-10 w-14 h-14 rounded-2xl bg-gradient-to-br from-sage/20 to-sage-light/30 backdrop-blur-sm border border-sage/30 flex items-center justify-center mb-6 group-hover:shadow-[0_8px_24px_-4px_hsl(var(--sage)/0.3)] transition-shadow duration-300"
-            aria-hidden="true"
-          >
-            <Icon className="w-7 h-7 text-sage-dark group-hover:text-sage transition-colors" />
-          </motion.div>
-
-          {/* Content */}
-          <div className="relative z-10">
-            <h3 className="text-xl font-serif font-medium text-foreground mb-2 tracking-tight group-hover:text-sage-dark transition-colors">
-              {pillar.name}
-            </h3>
-            <p className="text-muted-foreground text-sm leading-relaxed mb-6">
-              {pillar.description}
-            </p>
-
-            {/* Stats row */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl font-serif font-medium text-sage">{pillar.items}</span>
-                <span className="text-xs text-muted-foreground uppercase tracking-wider">items</span>
-              </div>
-
-              {/* Mini progress bar */}
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-16 h-1.5 bg-sage/10 rounded-full overflow-hidden"
-                  role="progressbar"
-                  aria-valuenow={pillar.progress}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-label={`${pillar.name} progress`}
-                >
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={isInView ? { width: `${pillar.progress}%` } : {}}
-                    transition={{ duration: 1, delay: 0.5 }}
-                    className="h-full bg-gradient-to-r from-sage to-sage-dark rounded-full"
-                  />
-                </div>
-                <span className="text-xs text-sage font-medium" aria-hidden="true">{pillar.progress}%</span>
-              </div>
-            </div>
+          {/* Icon */}
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sage/15 to-sage-light/30 flex items-center justify-center mb-3 group-hover:from-sage/25 group-hover:to-sage-light/40 transition-all">
+            <Icon className="w-5 h-5 text-sage-dark" />
           </div>
 
-          {/* Arrow indicator */}
-          <div className="absolute top-8 right-8 w-10 h-10 rounded-full bg-sage/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:bg-sage/20">
-            <ArrowRight className="w-5 h-5 text-sage-dark" />
+          {/* Content */}
+          <h3 className="font-serif text-base font-medium text-charcoal mb-1 group-hover:text-sage-dark transition-colors">
+            {pillar.name}
+          </h3>
+          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+            {pillar.description}
+          </p>
+
+          {/* Progress indicator */}
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-sage/10">
+            <div className="flex items-center gap-1.5">
+              <span className="text-lg font-serif font-medium text-sage">{pillar.items}</span>
+              <span className="text-[10px] text-muted-foreground uppercase">items</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-12 h-1 bg-sage/10 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${pillar.progress}%` }}
+                  transition={{ delay: delay + 0.3, duration: 0.8 }}
+                  className="h-full bg-gradient-to-r from-sage to-sage-dark rounded-full"
+                />
+              </div>
+              <span className="text-[10px] text-sage font-medium">{pillar.progress}%</span>
+            </div>
           </div>
         </motion.div>
       </Link>
@@ -369,28 +237,162 @@ function PillarCard({ pillar, index }: { pillar: Pillar; index: number }) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// ORGANIC DIVIDER
+// QUICK ACTION CARD
 // ════════════════════════════════════════════════════════════════════════════
-function OrganicDivider() {
+function QuickActionCard({
+  icon: Icon,
+  title,
+  description,
+  href,
+  color = "sage",
+  delay = 0
+}: {
+  icon: typeof Mic;
+  title: string;
+  description: string;
+  href: string;
+  color?: "sage" | "amber" | "rose";
+  delay?: number;
+}) {
+  const colorClasses = {
+    sage: "from-sage/20 to-sage-light/30 text-sage-dark",
+    amber: "from-amber-100 to-amber-50 text-amber-700",
+    rose: "from-rose-100 to-rose-50 text-rose-700",
+  };
+
   return (
-    <div className="relative py-12 overflow-hidden">
-      <svg className="w-full h-12" viewBox="0 0 1200 40" preserveAspectRatio="none">
-        <motion.path
-          d="M0,20 Q150,5 300,20 T600,20 T900,20 T1200,20"
-          fill="none"
-          stroke="hsl(var(--sage) / 0.3)"
-          strokeWidth="1.5"
-          initial={{ pathLength: 0 }}
-          whileInView={{ pathLength: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 2, ease: "easeOut" }}
-        />
-        {/* Decorative dots along the path */}
-        <circle cx="300" cy="20" r="3" fill="hsl(var(--sage) / 0.4)" />
-        <circle cx="600" cy="20" r="4" fill="hsl(var(--sage) / 0.3)" />
-        <circle cx="900" cy="20" r="3" fill="hsl(var(--sage) / 0.4)" />
-      </svg>
-    </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.5 }}
+    >
+      <Link href={href}>
+        <motion.div
+          whileHover={{ scale: 1.02, y: -3 }}
+          whileTap={{ scale: 0.98 }}
+          className="p-5 bg-white/80 backdrop-blur-sm rounded-2xl border border-sage/15 shadow-md hover:shadow-lg hover:border-sage/25 transition-all cursor-pointer group"
+        >
+          <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${colorClasses[color]} flex items-center justify-center mb-4`}>
+            <Icon className="w-6 h-6" />
+          </div>
+          <h4 className="font-medium text-charcoal mb-1 group-hover:text-sage-dark transition-colors">{title}</h4>
+          <p className="text-sm text-muted-foreground">{description}</p>
+        </motion.div>
+      </Link>
+    </motion.div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ACTIVITY CARD
+// ════════════════════════════════════════════════════════════════════════════
+function ActivityCard({ delay = 0 }: { delay?: number }) {
+  const activities = [
+    { icon: Mic, text: "Voice message recorded", time: "2 days ago", color: "text-rose-500 bg-rose-50" },
+    { icon: Heart, text: "3 memories added", time: "5 days ago", color: "text-pink-500 bg-pink-50" },
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.5 }}
+      className="p-5 bg-white/80 backdrop-blur-sm rounded-2xl border border-sage/15 shadow-md"
+    >
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-2 h-2 rounded-full bg-sage animate-pulse" />
+        <span className="text-xs uppercase tracking-wider text-sage font-medium">Recent Activity</span>
+      </div>
+
+      <div className="space-y-3">
+        {activities.map((activity, i) => (
+          <div key={i} className="flex items-center gap-3 p-3 bg-sage/5 rounded-xl">
+            <div className={`w-9 h-9 rounded-lg ${activity.color} flex items-center justify-center`}>
+              <activity.icon className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-charcoal truncate">{activity.text}</p>
+              <p className="text-xs text-muted-foreground">{activity.time}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// MEMORY PROMPT CARD
+// ════════════════════════════════════════════════════════════════════════════
+function MemoryPromptCard({ prompt, delay = 0 }: { prompt: string; delay?: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.5 }}
+      className="p-5 bg-gradient-to-br from-amber-50/80 to-orange-50/60 backdrop-blur-sm rounded-2xl border border-amber-200/50 shadow-md"
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <Sparkles className="w-4 h-4 text-amber-500" />
+        <span className="text-xs uppercase tracking-wider text-amber-600 font-medium">Memory Prompt</span>
+      </div>
+
+      <p className="font-serif text-lg text-amber-900 leading-relaxed mb-4">
+        &ldquo;{prompt}&rdquo;
+      </p>
+
+      <Link href="/dashboard/stories">
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="flex items-center gap-2 px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 rounded-lg text-sm font-medium transition-colors"
+        >
+          <BookOpen className="w-4 h-4" />
+          Write about it
+        </motion.button>
+      </Link>
+    </motion.div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// JOURNEY STATS CARD
+// ════════════════════════════════════════════════════════════════════════════
+function JourneyStatsCard({ delay = 0 }: { delay?: number }) {
+  const weekActivity = [true, true, true, true, true, false, false]; // Last 7 days
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.5 }}
+      className="p-5 bg-gradient-to-br from-sage-light/40 to-sage/10 backdrop-blur-sm rounded-2xl border border-sage/20 shadow-md"
+    >
+      <div className="flex items-center gap-2 mb-4">
+        <TrendingUp className="w-4 h-4 text-sage" />
+        <span className="text-xs uppercase tracking-wider text-sage font-medium">Your Journey</span>
+      </div>
+
+      <div className="flex items-baseline gap-2 mb-2">
+        <span className="text-4xl font-serif font-semibold text-sage-dark">12</span>
+        <span className="text-sm text-sage">days active</span>
+      </div>
+
+      <p className="text-sm text-muted-foreground mb-4">
+        You&apos;re building something meaningful. Keep going!
+      </p>
+
+      {/* Week activity dots */}
+      <div className="flex items-center gap-2">
+        {weekActivity.map((active, i) => (
+          <div
+            key={i}
+            className={`w-4 h-4 rounded-full ${active ? 'bg-sage' : 'bg-sage/20'}`}
+          />
+        ))}
+      </div>
+      <p className="text-[10px] text-muted-foreground mt-2">This week&apos;s activity</p>
+    </motion.div>
   );
 }
 
@@ -405,18 +407,27 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
   const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const firstName = getFirstName(userName);
   const overallProgress = calculateOverallProgress(PILLARS);
-  const completedPillars = getCompletedPillars(PILLARS);
-  const nextPillar = getNextIncompletePillar(PILLARS);
   const greeting = getGreetingByHour();
   const GreetingIcon = greeting.icon;
-  const dailyQuote = getDailyItem(INSPIRATIONAL_QUOTES);
   const dailyPrompt = getDailyItem(MEMORY_PROMPTS);
+
+  // Pillar positions for the constellation layout
+  const pillarPositions = [
+    { x: "5%", y: "15%" },      // Voice Messages - top left
+    { x: "75%", y: "5%" },      // Memories - top right
+    { x: "85%", y: "35%" },     // Stories - right
+    { x: "80%", y: "65%" },     // Vault - bottom right
+    { x: "5%", y: "50%" },      // Family - left
+    { x: "10%", y: "80%" },     // Messages - bottom left
+    { x: "45%", y: "85%" },     // Legacy - bottom center
+    { x: "70%", y: "90%" },     // Eldercare - bottom right
+  ];
 
   if (!mounted) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-2 border-sage/20 border-t-sage rounded-full animate-spin" />
+          <div className="w-12 h-12 border-2 border-sage/20 border-t-sage rounded-full animate-spin" />
           <span className="text-sage/60 text-sm">Loading your legacy...</span>
         </div>
       </div>
@@ -424,576 +435,239 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-sage-light/5 to-background relative">
-      {/* Decorative background */}
-      <DecorativeBackground />
+    <div className="min-h-screen bg-gradient-to-b from-cream via-background to-sage-light/10 relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-sage/8 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-sage-light/15 rounded-full blur-[100px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-sage/3 rounded-full blur-[150px]" />
+      </div>
 
       {/* ══════════════════════════════════════════════════════════════════
-          FLOATING SIDEBAR - Quick Pillar Access
+          HERO SECTION - Greeting & Quick Actions
       ══════════════════════════════════════════════════════════════════ */}
-      <motion.nav
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.6, delay: 0.8 }}
-        className="fixed left-4 top-1/2 -translate-y-1/2 z-50 hidden lg:flex flex-col gap-1"
-      >
-        {/* Glass container */}
-        <div className="p-2 rounded-2xl bg-white/80 backdrop-blur-xl border border-sage/20 shadow-lg shadow-sage/10">
-          {PILLARS.map((pillar, index) => {
-            const Icon = pillar.icon;
-            return (
-              <Link key={pillar.id} href={pillar.href}>
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 * index + 0.8 }}
-                  className="group relative flex items-center"
+      <section className="px-6 pt-8 pb-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            {/* Left: Greeting */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm border border-sage/20 rounded-full mb-4">
+                <GreetingIcon className="w-4 h-4 text-amber-500" />
+                <span className="text-sm text-charcoal/80">{greeting.text}</span>
+              </div>
+
+              <h1 className="font-serif text-4xl sm:text-5xl font-medium tracking-tight">
+                <span className="text-charcoal">Hello, </span>
+                <span className="text-sage">{firstName}</span>
+              </h1>
+              <p className="text-muted-foreground mt-2">What would you like to preserve today?</p>
+            </motion.div>
+
+            {/* Right: Quick Actions */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="flex flex-wrap gap-3"
+            >
+              <Link href="/dashboard/voice">
+                <motion.button
+                  whileHover={{ scale: 1.03, y: -2 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="flex items-center gap-2 px-5 py-3 bg-sage hover:bg-sage-dark text-white rounded-full font-medium shadow-lg shadow-sage/25 transition-colors"
                 >
-                  <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 hover:bg-sage/15 cursor-pointer"
-                  >
-                    <Icon className="w-5 h-5 text-sage/70 group-hover:text-sage-dark transition-colors" />
-                    {/* Progress indicator */}
-                    {pillar.progress > 0 && (
-                      <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-sage" />
-                    )}
-                  </motion.div>
-                  {/* Tooltip label */}
-                  <div className="absolute left-full ml-3 px-3 py-1.5 rounded-lg bg-foreground/90 text-white text-sm font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 shadow-lg">
-                    {pillar.name}
-                    <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-foreground/90" />
-                  </div>
-                </motion.div>
+                  <Mic className="w-4 h-4" />
+                  Record a Message
+                </motion.button>
               </Link>
-            );
-          })}
+              <Link href="/dashboard/memories">
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="flex items-center gap-2 px-5 py-3 bg-white/80 hover:bg-white border border-sage/25 text-sage-dark rounded-full font-medium transition-all"
+                >
+                  <Heart className="w-4 h-4" />
+                  Add Memory
+                </motion.button>
+              </Link>
+            </motion.div>
+          </div>
         </div>
-      </motion.nav>
+      </section>
 
       {/* ══════════════════════════════════════════════════════════════════
-          MOBILE BOTTOM DOCK - Quick Pillar Access (visible on mobile/tablet)
+          MAIN SECTION - Central Hub with Floating Pillars (Desktop)
       ══════════════════════════════════════════════════════════════════ */}
+      <section className="hidden lg:block relative px-6 py-12 min-h-[800px]">
+        <div className="max-w-7xl mx-auto relative">
+          {/* Connection lines (decorative) */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ minHeight: 800 }}>
+            <defs>
+              <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="hsl(var(--sage))" stopOpacity="0.1" />
+                <stop offset="50%" stopColor="hsl(var(--sage))" stopOpacity="0.2" />
+                <stop offset="100%" stopColor="hsl(var(--sage))" stopOpacity="0.1" />
+              </linearGradient>
+            </defs>
+            {/* Lines connecting hub to pillars */}
+            <motion.line
+              x1="50%" y1="50%" x2="15%" y2="25%"
+              stroke="url(#lineGradient)" strokeWidth="1"
+              initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
+              transition={{ duration: 1, delay: 0.5 }}
+            />
+            <motion.line
+              x1="50%" y1="50%" x2="85%" y2="20%"
+              stroke="url(#lineGradient)" strokeWidth="1"
+              initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
+              transition={{ duration: 1, delay: 0.6 }}
+            />
+            <motion.line
+              x1="50%" y1="50%" x2="90%" y2="50%"
+              stroke="url(#lineGradient)" strokeWidth="1"
+              initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
+              transition={{ duration: 1, delay: 0.7 }}
+            />
+            <motion.line
+              x1="50%" y1="50%" x2="15%" y2="60%"
+              stroke="url(#lineGradient)" strokeWidth="1"
+              initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
+              transition={{ duration: 1, delay: 0.8 }}
+            />
+          </svg>
+
+          {/* Central Legacy Hub */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+            <LegacyHub progress={overallProgress} />
+          </div>
+
+          {/* Floating Pillar Cards */}
+          {PILLARS.map((pillar, index) => (
+            <FloatingPillar
+              key={pillar.id}
+              pillar={pillar}
+              position={pillarPositions[index]}
+              delay={0.3 + index * 0.1}
+              size={index === 0 || index === 3 ? "lg" : index === 7 ? "sm" : "md"}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════
+          MOBILE/TABLET - Card Grid Layout
+      ══════════════════════════════════════════════════════════════════ */}
+      <section className="lg:hidden px-6 py-8">
+        <div className="max-w-2xl mx-auto">
+          {/* Central Hub */}
+          <div className="flex justify-center mb-12">
+            <LegacyHub progress={overallProgress} />
+          </div>
+
+          {/* Pillars Grid */}
+          <div className="grid grid-cols-2 gap-4">
+            {PILLARS.map((pillar, index) => {
+              const Icon = pillar.icon;
+              return (
+                <motion.div
+                  key={pillar.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 + index * 0.05 }}
+                >
+                  <Link href={pillar.href}>
+                    <div className="p-4 bg-white/80 backdrop-blur-sm rounded-2xl border border-sage/15 shadow-md hover:shadow-lg hover:border-sage/25 transition-all">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sage/15 to-sage-light/30 flex items-center justify-center mb-3">
+                        <Icon className="w-5 h-5 text-sage-dark" />
+                      </div>
+                      <h3 className="font-medium text-charcoal text-sm">{pillar.name}</h3>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs text-muted-foreground">{pillar.items} items</span>
+                        <span className="text-xs text-sage font-medium">{pillar.progress}%</span>
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════
+          BOTTOM SECTION - Activity, Prompts, Stats
+      ══════════════════════════════════════════════════════════════════ */}
+      <section className="px-6 py-12 mt-auto">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <ActivityCard delay={0.1} />
+            <MemoryPromptCard prompt={dailyPrompt} delay={0.2} />
+            <JourneyStatsCard delay={0.3} />
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════
+          FOOTER
+      ══════════════════════════════════════════════════════════════════ */}
+      <footer className="px-6 py-8 text-center">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1 }}
+        >
+          <div className="flex items-center justify-center gap-3 text-muted-foreground text-sm mb-4">
+            <span className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-sage/50" />
+              Secure
+            </span>
+            <span className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-sage/50" />
+              Private
+            </span>
+            <span className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-sage/50" />
+              Encrypted
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground/60">
+            Your legacy, preserved forever.
+          </p>
+        </motion.div>
+      </footer>
+
+      {/* Mobile Bottom Dock */}
       <motion.nav
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 1 }}
         className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 lg:hidden"
       >
-        <div className="flex gap-1 p-2 rounded-2xl bg-white/90 backdrop-blur-xl border border-sage/20 shadow-lg shadow-black/10">
-          {PILLARS.slice(0, 5).map((pillar) => {
+        <div className="flex gap-1 p-2 rounded-2xl bg-white/90 backdrop-blur-xl border border-sage/20 shadow-lg">
+          {PILLARS.slice(0, 4).map((pillar) => {
             const Icon = pillar.icon;
             return (
               <Link key={pillar.id} href={pillar.href}>
                 <motion.div
-                  whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className="relative w-11 h-11 rounded-xl flex items-center justify-center hover:bg-sage/15 transition-colors"
+                  className="w-12 h-12 rounded-xl flex items-center justify-center hover:bg-sage/10 transition-colors"
                 >
                   <Icon className="w-5 h-5 text-sage/70" />
-                  {pillar.progress > 0 && (
-                    <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-sage" />
-                  )}
                 </motion.div>
               </Link>
             );
           })}
-          {/* More button for remaining pillars */}
           <Link href="#pillars">
-            <motion.div
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className="w-11 h-11 rounded-xl flex items-center justify-center hover:bg-sage/15 transition-colors"
-            >
-              <span className="text-sage/70 text-xs font-bold">+3</span>
-            </motion.div>
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center hover:bg-sage/10 transition-colors">
+              <Plus className="w-5 h-5 text-sage/70" />
+            </div>
           </Link>
         </div>
       </motion.nav>
-
-      {/* ══════════════════════════════════════════════════════════════════
-          SECTION 1: HERO - ARTISTIC WELCOME
-      ══════════════════════════════════════════════════════════════════ */}
-      <section className="relative px-6 pt-8 pb-16 overflow-hidden">
-        {/* Hero-specific decorations */}
-        <div className="absolute inset-0 pointer-events-none">
-          <motion.div
-            animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
-            transition={{ duration: 8, repeat: Infinity }}
-            className="absolute top-10 right-[15%] w-64 h-64 bg-sage/10 rounded-full blur-[80px]"
-          />
-          <motion.div
-            animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.4, 0.2] }}
-            transition={{ duration: 10, repeat: Infinity, delay: 2 }}
-            className="absolute bottom-0 left-[10%] w-80 h-80 bg-sage-light/15 rounded-full blur-[100px]"
-          />
-        </div>
-
-        <div className="max-w-6xl mx-auto relative">
-          {/* Two Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
-
-            {/* LEFT: Greeting & Actions */}
-            <motion.div
-              initial={{ opacity: 0, x: -40 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              className="space-y-6"
-            >
-              {/* Time-based greeting badge */}
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="inline-flex items-center gap-3"
-              >
-                <div className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm border border-sage/25 rounded-full shadow-sm">
-                  <GreetingIcon className="w-4 h-4 text-amber-500" aria-hidden="true" />
-                  <span className="text-sm font-medium text-foreground/80">
-                    {greeting.text}
-                  </span>
-                </div>
-              </motion.div>
-
-              {/* Main heading with gradient */}
-              <div>
-                <motion.h1
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3, duration: 0.8 }}
-                  className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-medium tracking-tight leading-[1.1]"
-                >
-                  <span className="text-foreground">Hello,</span>
-                  <br />
-                  <span className="bg-gradient-to-r from-sage via-sage-dark to-sage bg-clip-text text-transparent">
-                    {firstName}
-                  </span>
-                </motion.h1>
-
-                <motion.p
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5, duration: 0.6 }}
-                  className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground max-w-md"
-                >
-                  What would you like to preserve today?
-                </motion.p>
-              </div>
-
-              {/* Quick Actions */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7 }}
-                className="flex flex-wrap gap-3 pt-2"
-              >
-                <Link href="/dashboard/voice">
-                  <motion.button
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-sage hover:bg-sage-dark text-white rounded-full font-medium shadow-lg shadow-sage/25 transition-colors"
-                  >
-                    <Mic className="w-4 h-4" />
-                    Record a Message
-                  </motion.button>
-                </Link>
-                <Link href="/dashboard/memories">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-white/70 hover:bg-white border border-sage/30 text-sage-dark rounded-full font-medium transition-all"
-                  >
-                    <Heart className="w-4 h-4" />
-                    Add Memory
-                  </motion.button>
-                </Link>
-              </motion.div>
-            </motion.div>
-
-            {/* RIGHT: Inspirational Quote Card */}
-            <motion.div
-              initial={{ opacity: 0, x: 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="relative"
-            >
-              <div className="relative p-8 rounded-3xl bg-gradient-to-br from-white/80 via-white/60 to-sage-light/30 backdrop-blur-sm border border-white/60 shadow-xl">
-                {/* Decorative quote mark */}
-                <Quote className="absolute top-4 right-4 w-12 h-12 text-sage/15" />
-
-                {/* Floating decorative elements */}
-                <motion.div
-                  animate={{ y: [0, -8, 0], rotate: [0, 5, 0] }}
-                  transition={{ duration: 5, repeat: Infinity }}
-                  className="absolute -top-4 -left-4 w-8 h-8 rounded-full bg-sage/20 flex items-center justify-center"
-                >
-                  <Sparkles className="w-4 h-4 text-sage" />
-                </motion.div>
-
-                <div className="relative">
-                  <p className="text-xs uppercase tracking-[0.2em] text-sage mb-3">Daily Reflection</p>
-                  <p className="font-serif text-xl sm:text-2xl text-foreground leading-relaxed italic">
-                    &ldquo;{dailyQuote}&rdquo;
-                  </p>
-                  <div className="mt-6 pt-4 border-t border-sage/15">
-                    <Link href="/dashboard/stories">
-                      <motion.span
-                        whileHover={{ x: 4 }}
-                        className="inline-flex items-center gap-2 text-sm font-medium text-sage hover:text-sage-dark transition-colors cursor-pointer"
-                      >
-                        Start writing your story
-                        <ArrowRight className="w-4 h-4" />
-                      </motion.span>
-                    </Link>
-                  </div>
-                </div>
-
-                {/* Mini progress indicator */}
-                <div className="absolute -bottom-3 -right-3 px-4 py-2 bg-white rounded-full shadow-lg border border-sage/20">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-sage/15 flex items-center justify-center">
-                      <span className="text-sm font-bold text-sage">{overallProgress}%</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">Legacy<br/>Complete</span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Recent Activity & Insights */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6"
-          >
-            {/* Recent Activity Card */}
-            <motion.div
-              whileHover={{ y: -4 }}
-              className="p-6 rounded-3xl bg-white/60 backdrop-blur-sm border border-sage/20 relative overflow-hidden"
-            >
-              <div className="absolute -top-6 -right-6 w-24 h-24 bg-sage/10 rounded-full blur-2xl" />
-              <div className="relative">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-2 h-2 rounded-full bg-sage animate-pulse" />
-                  <span className="text-xs uppercase tracking-wider text-sage/70">Recent Activity</span>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-sage/5 border border-sage/10">
-                    <div className="w-8 h-8 rounded-lg bg-rose-100 flex items-center justify-center">
-                      <Mic className="w-4 h-4 text-rose-500" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-foreground font-medium">Voice message recorded</p>
-                      <p className="text-xs text-muted-foreground">2 days ago</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-sage/5 border border-sage/10">
-                    <div className="w-8 h-8 rounded-lg bg-pink-100 flex items-center justify-center">
-                      <Heart className="w-4 h-4 text-pink-500" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-foreground font-medium">3 memories added</p>
-                      <p className="text-xs text-muted-foreground">5 days ago</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* On This Day / Memory Prompt Card */}
-            <motion.div
-              whileHover={{ y: -4 }}
-              className="p-6 rounded-3xl bg-gradient-to-br from-amber-50/80 to-orange-50/60 backdrop-blur-sm border border-amber-200/30 relative overflow-hidden"
-            >
-              <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-amber-200/20 rounded-full blur-2xl" />
-              <div className="relative">
-                <div className="flex items-center gap-2 mb-4">
-                  <Sparkles className="w-4 h-4 text-amber-500" />
-                  <span className="text-xs uppercase tracking-wider text-amber-600/70">Memory Prompt</span>
-                </div>
-                <p className="font-serif text-lg text-amber-900/80 leading-relaxed mb-4">
-                  &ldquo;{dailyPrompt}&rdquo;
-                </p>
-                <Link href="/dashboard/stories">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 rounded-full text-sm font-medium transition-colors"
-                  >
-                    <BookOpen className="w-4 h-4" />
-                    Write about it
-                  </motion.button>
-                </Link>
-              </div>
-            </motion.div>
-
-            {/* Legacy Streak / Encouragement Card */}
-            <motion.div
-              whileHover={{ y: -4 }}
-              className="p-6 rounded-3xl bg-gradient-to-br from-sage-light/30 to-sage/10 backdrop-blur-sm border border-sage/20 relative overflow-hidden"
-            >
-              <div className="absolute -top-8 -left-8 w-32 h-32 bg-sage/15 rounded-full blur-2xl" />
-              <div className="relative">
-                <div className="flex items-center gap-2 mb-4">
-                  <TrendingUp className="w-4 h-4 text-sage" />
-                  <span className="text-xs uppercase tracking-wider text-sage/70">Your Journey</span>
-                </div>
-                <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-4xl font-serif font-medium text-sage-dark">12</span>
-                  <span className="text-sm text-sage/70">days active</span>
-                </div>
-                <p className="text-sm text-muted-foreground mb-4">
-                  You&apos;re building something meaningful. Keep going!
-                </p>
-                <div className="flex gap-1">
-                  {[...Array(7)].map((_, i) => (
-                    <div
-                      key={i}
-                      className={`w-3 h-3 rounded-full ${i < 5 ? 'bg-sage' : 'bg-sage/20'}`}
-                    />
-                  ))}
-                </div>
-                <p className="text-xs text-sage/60 mt-2">This week&apos;s activity</p>
-              </div>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      <OrganicDivider />
-
-      {/* ══════════════════════════════════════════════════════════════════
-          SECTION 2: PROGRESS & GUIDANCE
-      ══════════════════════════════════════════════════════════════════ */}
-      <section className="px-6 py-16">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            {/* Progress Ring */}
-            <motion.div
-              initial={{ opacity: 0, x: -40 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-              className="flex flex-col items-center lg:items-start"
-            >
-              <span className="text-sage/60 text-xs tracking-[0.2em] uppercase mb-8">Your Legacy Progress</span>
-              <ProgressRing progress={overallProgress} />
-              <p className="text-muted-foreground text-center lg:text-left mt-8 max-w-xs">
-                You&apos;re building something beautiful. Every step brings you closer to preserving what matters.
-              </p>
-
-              {/* View Full Report Button */}
-              <Link href="/dashboard/progress" className="group mt-6 inline-flex">
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-sage/10 hover:bg-sage/20 border border-sage/30 hover:border-sage/50 rounded-full transition-all duration-300"
-                >
-                  <TrendingUp className="w-4 h-4 text-sage" />
-                  <span className="text-sm font-medium text-sage-dark">View Full Report</span>
-                  <ArrowRight className="w-4 h-4 text-sage group-hover:translate-x-1 transition-transform" />
-                </motion.div>
-              </Link>
-            </motion.div>
-
-            {/* Guidance */}
-            <motion.div
-              initial={{ opacity: 0, x: 40 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="space-y-8"
-            >
-              {/* What you've completed */}
-              <div className="p-6 rounded-2xl bg-white/40 backdrop-blur-sm border border-sage/20">
-                <h3 className="text-foreground font-serif font-medium mb-4 flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-sage/20 flex items-center justify-center">
-                    <Check className="w-4 h-4 text-sage" />
-                  </div>
-                  What you&apos;ve completed
-                </h3>
-                <div className="space-y-3">
-                  {completedPillars.map(pillar => (
-                    <div key={pillar.id} className="flex items-center gap-3 text-muted-foreground">
-                      <div className="w-2 h-2 rounded-full bg-sage" />
-                      <span className="text-sm">{pillar.name} — <span className="text-sage font-medium">{pillar.progress}%</span></span>
-                    </div>
-                  ))}
-                  {completedPillars.length === 0 && (
-                    <p className="text-sage/60 text-sm italic">Start your journey by exploring any pillar below.</p>
-                  )}
-                </div>
-              </div>
-
-              {/* What matters next */}
-              <div className="p-6 rounded-2xl bg-gradient-to-br from-sage/10 to-sage-light/20 backdrop-blur-sm border border-sage/30">
-                <h3 className="text-foreground font-serif font-medium mb-4 flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-sage/30 flex items-center justify-center">
-                    <Sparkles className="w-4 h-4 text-sage-dark" />
-                  </div>
-                  What matters most next
-                </h3>
-                {nextPillar && (
-                  <Link href={nextPillar.href} className="group block">
-                    <div className="flex items-center justify-between p-4 rounded-xl bg-white/50 border border-sage/20 group-hover:border-sage/40 group-hover:bg-white/70 transition-all duration-300">
-                      <div>
-                        <p className="text-foreground font-medium">{nextPillar.name}</p>
-                        <p className="text-sage/70 text-sm">Only {nextPillar.progress}% complete — needs your attention</p>
-                      </div>
-                      <motion.div
-                        whileHover={{ x: 4 }}
-                        className="w-10 h-10 rounded-full bg-sage/20 group-hover:bg-sage flex items-center justify-center transition-colors duration-300"
-                      >
-                        <ArrowRight className="w-5 h-5 text-sage-dark group-hover:text-white transition-colors" />
-                      </motion.div>
-                    </div>
-                  </Link>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      <OrganicDivider />
-
-      {/* ══════════════════════════════════════════════════════════════════
-          SECTION 3: PILLARS (ARTISTIC LAYOUT)
-      ══════════════════════════════════════════════════════════════════ */}
-      <section id="pillars" className="px-6 py-16 scroll-mt-20">
-        <div className="max-w-6xl mx-auto">
-          {/* Section header */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <span className="text-sage/60 text-xs tracking-[0.2em] uppercase mb-4 block">Your Journey</span>
-            <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-medium text-foreground tracking-tight">
-              Life <span className="text-sage">Pillars</span>
-            </h2>
-            <p className="text-muted-foreground mt-4 max-w-md mx-auto">
-              Each pillar holds a piece of your legacy. Build them together, one memory at a time.
-            </p>
-          </motion.div>
-
-          {/* Artistic grid - responsive layout */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {/* First row - Featured pillar spans 2 on large screens */}
-            <div className="sm:col-span-2 lg:col-span-2">
-              <PillarCard pillar={PILLARS[0]} index={0} />
-            </div>
-            <div className="sm:col-span-2 lg:col-span-1">
-              <PillarCard pillar={PILLARS[1]} index={1} />
-            </div>
-
-            {/* Second row - 1 + 1 + 1 */}
-            <div>
-              <PillarCard pillar={PILLARS[2]} index={2} />
-            </div>
-            <div>
-              <PillarCard pillar={PILLARS[3]} index={3} />
-            </div>
-            <div className="sm:col-span-2 lg:col-span-1">
-              <PillarCard pillar={PILLARS[4]} index={4} />
-            </div>
-
-            {/* Third row - 1 + 2 */}
-            <div>
-              <PillarCard pillar={PILLARS[5]} index={5} />
-            </div>
-            <div className="sm:col-span-2 lg:col-span-2">
-              <PillarCard pillar={PILLARS[6]} index={6} />
-            </div>
-
-            {/* Fourth row - full width for Eldercare */}
-            <div className="sm:col-span-2 lg:col-span-3">
-              <PillarCard pillar={PILLARS[7]} index={7} />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <OrganicDivider />
-
-      {/* ══════════════════════════════════════════════════════════════════
-          SECTION 4: EMOTIONAL FOOTER
-      ══════════════════════════════════════════════════════════════════ */}
-      <footer className="px-6 py-20 relative">
-        {/* Background glow */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-[600px] h-[300px] bg-sage/10 rounded-full blur-[100px]" />
-        </div>
-
-        <div className="max-w-4xl mx-auto text-center relative">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
-            {/* Decorative element */}
-            <div className="flex justify-center mb-8">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                className="w-16 h-16 rounded-full border border-sage/30 flex items-center justify-center"
-              >
-                <Heart className="w-6 h-6 text-sage" />
-              </motion.div>
-            </div>
-
-            {/* Emotional message */}
-            <p className="text-sage/60 text-xs tracking-[0.2em] uppercase mb-4 sm:mb-6">Remember</p>
-            <h3 className="font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl font-medium text-foreground leading-relaxed mb-6 sm:mb-8 px-4 sm:px-0">
-              The moments you preserve today
-              <br className="hidden sm:block" />
-              <span className="sm:hidden"> </span>
-              <span className="text-sage">become treasures for tomorrow.</span>
-            </h3>
-
-            {/* Trust indicators */}
-            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 md:gap-10 text-muted-foreground text-xs sm:text-sm mb-8 sm:mb-12">
-              <span className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-sage/50" />
-                Secure & Private
-              </span>
-              <span className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-sage/50" />
-                Made with Love
-              </span>
-              <span className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-sage/50" />
-                Your Legacy
-              </span>
-            </div>
-
-            {/* Final CTA */}
-            <Link href="/dashboard/vault">
-              <motion.button
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                className="inline-flex items-center gap-3 px-8 py-4 bg-sage hover:bg-sage-dark text-white rounded-full transition-colors shadow-[0_8px_30px_-4px_hsl(var(--sage)/0.4)] hover:shadow-[0_12px_40px_-4px_hsl(var(--sage)/0.5)]"
-              >
-                <span className="text-sm font-medium tracking-wide">Continue Building Your Legacy</span>
-                <ArrowRight className="w-5 h-5" />
-              </motion.button>
-            </Link>
-          </motion.div>
-
-          {/* Soft divider */}
-          <div className="mt-16 pt-8 border-t border-sage/20">
-            <div className="flex items-center justify-between text-xs text-muted-foreground/60">
-              <span>© afterMe</span>
-              <span>Your legacy, preserved forever.</span>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
