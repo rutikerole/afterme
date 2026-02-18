@@ -120,7 +120,7 @@ export function usePushNotifications() {
       // Subscribe to push service
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey,
+        applicationServerKey: applicationServerKey as BufferSource,
       });
 
       // Send subscription to server

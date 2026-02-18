@@ -457,15 +457,15 @@ export default function TrustedCirclePage() {
                           <FamilyTreeVisualization
                             members={connections.map((c) => ({
                               id: c.id,
-                              name: c.connectedUser?.name || c.connectedUserEmail,
-                              relationship: c.relationship,
+                              name: c.connectedUser?.name || c.connectedUser?.email || "",
+                              relationship: c.myRelationshipToThem,
                               avatar: c.connectedUser?.avatar || undefined,
                               isConnected: true,
-                              email: c.connectedUserEmail,
+                              email: c.connectedUser?.email || "",
                             }))}
                             currentUser={{
                               name: user?.name || "You",
-                              avatar: user?.avatar || undefined,
+                              avatar: undefined,
                             }}
                             onMemberClick={(member) => {
                               const connection = connections.find((c) => c.id === member.id);

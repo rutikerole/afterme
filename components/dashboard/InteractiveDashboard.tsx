@@ -616,82 +616,112 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════════
-          QUICK ACTIONS GRID - What would you like to do?
+          QUICK ACTIONS - Elegant Sage Theme
       ══════════════════════════════════════════════════════════════════ */}
-      <section className="px-6 py-10">
+      <section className="px-6 py-12">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7 }}
-          className="max-w-5xl mx-auto"
+          className="max-w-4xl mx-auto"
         >
-          {/* Section Header */}
-          <div className="text-center mb-8">
-            <motion.p
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
-              className="text-sm font-medium text-sage uppercase tracking-wider mb-2"
-            >
-              Quick Actions
-            </motion.p>
-            <motion.h2
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
+          {/* Section Header with decorative lines */}
+          <div className="flex items-center justify-center gap-4 mb-10">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: 60 }}
+              transition={{ delay: 0.8, duration: 0.6 }}
+              className="h-px bg-gradient-to-r from-transparent to-sage/40"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.9 }}
-              className="font-serif text-2xl text-charcoal"
+              className="text-center"
             >
-              What would you like to preserve today?
-            </motion.h2>
+              <p className="text-[11px] font-medium text-sage/70 uppercase tracking-[0.2em] mb-1">Begin Your Journey</p>
+              <h2 className="font-serif text-xl text-charcoal">What would you like to preserve?</h2>
+            </motion.div>
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: 60 }}
+              transition={{ delay: 0.8, duration: 0.6 }}
+              className="h-px bg-gradient-to-l from-transparent to-sage/40"
+            />
           </div>
 
-          {/* Action Cards Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* Elegant Action Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
             {[
-              { icon: Mic, label: "Record Voice", desc: "Leave a message", href: "/dashboard/voice", gradient: "from-rose-500/10 to-pink-500/10", iconColor: "text-rose-500" },
-              { icon: Heart, label: "Add Memory", desc: "Capture a moment", href: "/dashboard/memories", gradient: "from-sage/15 to-sage-light/20", iconColor: "text-sage" },
-              { icon: BookOpen, label: "Write Story", desc: "Share your journey", href: "/dashboard/stories", gradient: "from-amber-500/10 to-orange-500/10", iconColor: "text-amber-600" },
-              { icon: Gift, label: "Schedule", desc: "Plan a surprise", href: "/dashboard/messages", gradient: "from-blue-500/10 to-indigo-500/10", iconColor: "text-blue-500" },
+              { icon: Mic, label: "Voice Message", desc: "Record your voice for loved ones", href: "/dashboard/voice", number: "01" },
+              { icon: Heart, label: "Add Memory", desc: "Preserve precious moments", href: "/dashboard/memories", number: "02" },
+              { icon: BookOpen, label: "Write Story", desc: "Share your life journey", href: "/dashboard/stories", number: "03" },
+              { icon: Gift, label: "Schedule Gift", desc: "Plan future surprises", href: "/dashboard/messages", number: "04" },
             ].map((action, i) => (
               <motion.div
                 key={action.label}
-                initial={{ opacity: 0, y: 30, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ delay: 1 + i * 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                initial={{ opacity: 0, y: 40 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1 + i * 0.12, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
               >
                 <Link href={action.href}>
                   <motion.div
-                    whileHover={{ y: -8, scale: 1.02 }}
+                    whileHover={{ y: -6 }}
                     whileTap={{ scale: 0.98 }}
-                    className={`relative p-6 bg-gradient-to-br ${action.gradient} rounded-2xl border border-sage/10 cursor-pointer group overflow-hidden h-full`}
+                    className="relative h-full p-6 bg-white/80 backdrop-blur-sm rounded-2xl border border-sage/15 cursor-pointer group overflow-hidden shadow-sm hover:shadow-xl hover:shadow-sage/10 transition-all duration-500"
                   >
-                    {/* Animated background glow */}
-                    <motion.div
-                      className="absolute inset-0 bg-white/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{ duration: 3, repeat: Infinity }}
-                    />
+                    {/* Gradient overlay on hover */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-sage/0 via-sage/5 to-sage/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                    {/* Number indicator */}
+                    <span className="absolute top-4 right-4 text-[10px] font-medium text-sage/30 group-hover:text-sage/50 transition-colors">
+                      {action.number}
+                    </span>
 
                     <div className="relative">
-                      <motion.div
-                        whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
-                        transition={{ duration: 0.5 }}
-                        className="w-12 h-12 rounded-xl bg-white/80 shadow-sm flex items-center justify-center mb-4 group-hover:shadow-md transition-shadow"
-                      >
-                        <action.icon className={`w-6 h-6 ${action.iconColor}`} />
-                      </motion.div>
-                      <h3 className="font-medium text-charcoal group-hover:text-sage-dark transition-colors">{action.label}</h3>
-                      <p className="text-xs text-muted-foreground mt-1">{action.desc}</p>
-                    </div>
+                      {/* Icon container with animated border */}
+                      <div className="relative mb-5">
+                        <motion.div
+                          className="absolute inset-0 rounded-2xl border-2 border-sage/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                          animate={{ rotate: [0, 360] }}
+                          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                          style={{ borderRadius: "1rem" }}
+                        />
+                        <motion.div
+                          whileHover={{ scale: 1.05 }}
+                          className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-sage/10 via-sage/15 to-sage-light/25 flex items-center justify-center border border-sage/10 group-hover:border-sage/30 group-hover:shadow-lg group-hover:shadow-sage/20 transition-all duration-300"
+                        >
+                          <action.icon className="w-6 h-6 text-sage-dark group-hover:text-sage transition-colors duration-300" />
+                        </motion.div>
+                      </div>
 
-                    {/* Arrow indicator on hover */}
-                    <motion.div
-                      initial={{ opacity: 0, x: -10 }}
-                      whileHover={{ opacity: 1, x: 0 }}
-                      className="absolute bottom-4 right-4"
-                    >
-                      <ArrowRight className="w-4 h-4 text-sage" />
-                    </motion.div>
+                      {/* Text content */}
+                      <h3 className="font-serif text-base font-medium text-charcoal group-hover:text-sage-dark transition-colors duration-300 mb-1">
+                        {action.label}
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        {action.desc}
+                      </p>
+
+                      {/* Arrow with animated line */}
+                      <div className="flex items-center gap-2 mt-4 pt-4 border-t border-sage/10">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          whileHover={{ width: 20 }}
+                          className="h-px bg-sage/50"
+                        />
+                        <motion.div
+                          initial={{ x: -5, opacity: 0 }}
+                          whileHover={{ x: 0, opacity: 1 }}
+                          className="text-sage"
+                        >
+                          <ArrowRight className="w-4 h-4" />
+                        </motion.div>
+                        <span className="text-[10px] text-sage/60 group-hover:text-sage transition-colors">
+                          Get Started
+                        </span>
+                      </div>
+                    </div>
                   </motion.div>
                 </Link>
               </motion.div>
@@ -699,33 +729,6 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
           </div>
         </motion.div>
       </section>
-
-      {/* ══════════════════════════════════════════════════════════════════
-          FLOATING PARTICLES / DECORATIVE ELEMENTS
-      ══════════════════════════════════════════════════════════════════ */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-5">
-        {[...Array(6)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-2 h-2 rounded-full bg-sage/20"
-            style={{
-              left: `${15 + i * 15}%`,
-              top: `${20 + (i % 3) * 25}%`,
-            }}
-            animate={{
-              y: [0, -30, 0],
-              opacity: [0.3, 0.6, 0.3],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 4 + i,
-              repeat: Infinity,
-              delay: i * 0.5,
-              ease: "easeInOut",
-            }}
-          />
-        ))}
-      </div>
 
       {/* ══════════════════════════════════════════════════════════════════
           UPCOMING EVENTS SECTION
