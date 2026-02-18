@@ -166,75 +166,6 @@ function LegacyHub({ progress }: { progress: number }) {
   );
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// FLOATING PILLAR CARD - Scattered around the hub
-// ════════════════════════════════════════════════════════════════════════════
-interface FloatingPillarProps {
-  pillar: typeof PILLARS[0];
-  position: { x: string; y: string };
-  delay: number;
-  size?: "sm" | "md" | "lg";
-}
-
-function FloatingPillar({ pillar, position, delay, size = "md" }: FloatingPillarProps) {
-  const Icon = pillar.icon;
-
-  const sizeClasses = {
-    sm: "w-44 p-4",
-    md: "w-56 p-5",
-    lg: "w-64 p-6",
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.8, y: 20 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{ delay, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-      className="absolute"
-      style={{ left: position.x, top: position.y }}
-    >
-      <Link href={pillar.href}>
-        <motion.div
-          whileHover={{ scale: 1.05, y: -5 }}
-          whileTap={{ scale: 0.98 }}
-          className={`${sizeClasses[size]} bg-white/90 backdrop-blur-sm rounded-2xl border border-sage/15 shadow-lg shadow-sage/10 hover:shadow-xl hover:shadow-sage/15 hover:border-sage/30 transition-all duration-300 cursor-pointer group`}
-        >
-          {/* Icon */}
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sage/15 to-sage-light/30 flex items-center justify-center mb-3 group-hover:from-sage/25 group-hover:to-sage-light/40 transition-all">
-            <Icon className="w-5 h-5 text-sage-dark" />
-          </div>
-
-          {/* Content */}
-          <h3 className="font-serif text-base font-medium text-charcoal mb-1 group-hover:text-sage-dark transition-colors">
-            {pillar.name}
-          </h3>
-          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-            {pillar.description}
-          </p>
-
-          {/* Progress indicator */}
-          <div className="flex items-center justify-between mt-3 pt-3 border-t border-sage/10">
-            <div className="flex items-center gap-1.5">
-              <span className="text-lg font-serif font-medium text-sage">{pillar.items}</span>
-              <span className="text-[10px] text-muted-foreground uppercase">items</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-12 h-1 bg-sage/10 rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${pillar.progress}%` }}
-                  transition={{ delay: delay + 0.3, duration: 0.8 }}
-                  className="h-full bg-gradient-to-r from-sage to-sage-dark rounded-full"
-                />
-              </div>
-              <span className="text-[10px] text-sage font-medium">{pillar.progress}%</span>
-            </div>
-          </div>
-        </motion.div>
-      </Link>
-    </motion.div>
-  );
-}
 
 // ════════════════════════════════════════════════════════════════════════════
 // QUICK ACTION CARD
@@ -411,18 +342,6 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
   const GreetingIcon = greeting.icon;
   const dailyPrompt = getDailyItem(MEMORY_PROMPTS);
 
-  // Pillar positions for the constellation layout
-  const pillarPositions = [
-    { x: "5%", y: "15%" },      // Voice Messages - top left
-    { x: "75%", y: "5%" },      // Memories - top right
-    { x: "85%", y: "35%" },     // Stories - right
-    { x: "80%", y: "65%" },     // Vault - bottom right
-    { x: "5%", y: "50%" },      // Family - left
-    { x: "10%", y: "80%" },     // Messages - bottom left
-    { x: "45%", y: "85%" },     // Legacy - bottom center
-    { x: "70%", y: "90%" },     // Eldercare - bottom right
-  ];
-
   if (!mounted) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -500,61 +419,124 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════════
-          MAIN SECTION - Central Hub with Floating Pillars (Desktop)
+          MAIN SECTION - Central Hub with Pillars on Sides (Desktop)
       ══════════════════════════════════════════════════════════════════ */}
-      <section className="hidden lg:block relative px-6 py-12 min-h-[800px]">
-        <div className="max-w-7xl mx-auto relative">
-          {/* Connection lines (decorative) */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ minHeight: 800 }}>
-            <defs>
-              <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="hsl(var(--sage))" stopOpacity="0.1" />
-                <stop offset="50%" stopColor="hsl(var(--sage))" stopOpacity="0.2" />
-                <stop offset="100%" stopColor="hsl(var(--sage))" stopOpacity="0.1" />
-              </linearGradient>
-            </defs>
-            {/* Lines connecting hub to pillars */}
-            <motion.line
-              x1="50%" y1="50%" x2="15%" y2="25%"
-              stroke="url(#lineGradient)" strokeWidth="1"
-              initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
-              transition={{ duration: 1, delay: 0.5 }}
-            />
-            <motion.line
-              x1="50%" y1="50%" x2="85%" y2="20%"
-              stroke="url(#lineGradient)" strokeWidth="1"
-              initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
-              transition={{ duration: 1, delay: 0.6 }}
-            />
-            <motion.line
-              x1="50%" y1="50%" x2="90%" y2="50%"
-              stroke="url(#lineGradient)" strokeWidth="1"
-              initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
-              transition={{ duration: 1, delay: 0.7 }}
-            />
-            <motion.line
-              x1="50%" y1="50%" x2="15%" y2="60%"
-              stroke="url(#lineGradient)" strokeWidth="1"
-              initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
-              transition={{ duration: 1, delay: 0.8 }}
-            />
-          </svg>
+      <section className="hidden lg:block px-6 py-12">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center gap-8">
+            {/* Left Pillars Column */}
+            <div className="flex flex-col gap-5 w-[280px]">
+              {PILLARS.slice(0, 4).map((pillar, index) => {
+                const Icon = pillar.icon;
+                return (
+                  <motion.div
+                    key={pillar.id}
+                    initial={{ opacity: 0, x: -30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 + index * 0.1 }}
+                  >
+                    <Link href={pillar.href}>
+                      <motion.div
+                        whileHover={{ scale: 1.03, x: 5 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="p-5 bg-white/90 backdrop-blur-sm rounded-2xl border border-sage/15 shadow-lg shadow-sage/10 hover:shadow-xl hover:shadow-sage/15 hover:border-sage/30 transition-all cursor-pointer group"
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sage/15 to-sage-light/30 flex items-center justify-center flex-shrink-0 group-hover:from-sage/25 group-hover:to-sage-light/40 transition-all">
+                            <Icon className="w-6 h-6 text-sage-dark" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-serif text-base font-medium text-charcoal mb-1 group-hover:text-sage-dark transition-colors">
+                              {pillar.name}
+                            </h3>
+                            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                              {pillar.description}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-sage/10">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-lg font-serif font-medium text-sage">{pillar.items}</span>
+                            <span className="text-[10px] text-muted-foreground uppercase">items</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 h-1.5 bg-sage/10 rounded-full overflow-hidden">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${pillar.progress}%` }}
+                                transition={{ delay: 0.5 + index * 0.1, duration: 0.8 }}
+                                className="h-full bg-gradient-to-r from-sage to-sage-dark rounded-full"
+                              />
+                            </div>
+                            <span className="text-xs text-sage font-medium">{pillar.progress}%</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </div>
 
-          {/* Central Legacy Hub */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-            <LegacyHub progress={overallProgress} />
+            {/* Central Legacy Hub */}
+            <div className="flex-shrink-0 mx-8">
+              <LegacyHub progress={overallProgress} />
+            </div>
+
+            {/* Right Pillars Column */}
+            <div className="flex flex-col gap-5 w-[280px]">
+              {PILLARS.slice(4, 8).map((pillar, index) => {
+                const Icon = pillar.icon;
+                return (
+                  <motion.div
+                    key={pillar.id}
+                    initial={{ opacity: 0, x: 30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 + index * 0.1 }}
+                  >
+                    <Link href={pillar.href}>
+                      <motion.div
+                        whileHover={{ scale: 1.03, x: -5 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="p-5 bg-white/90 backdrop-blur-sm rounded-2xl border border-sage/15 shadow-lg shadow-sage/10 hover:shadow-xl hover:shadow-sage/15 hover:border-sage/30 transition-all cursor-pointer group"
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sage/15 to-sage-light/30 flex items-center justify-center flex-shrink-0 group-hover:from-sage/25 group-hover:to-sage-light/40 transition-all">
+                            <Icon className="w-6 h-6 text-sage-dark" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-serif text-base font-medium text-charcoal mb-1 group-hover:text-sage-dark transition-colors">
+                              {pillar.name}
+                            </h3>
+                            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                              {pillar.description}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-sage/10">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-lg font-serif font-medium text-sage">{pillar.items}</span>
+                            <span className="text-[10px] text-muted-foreground uppercase">items</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 h-1.5 bg-sage/10 rounded-full overflow-hidden">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${pillar.progress}%` }}
+                                transition={{ delay: 0.5 + index * 0.1, duration: 0.8 }}
+                                className="h-full bg-gradient-to-r from-sage to-sage-dark rounded-full"
+                              />
+                            </div>
+                            <span className="text-xs text-sage font-medium">{pillar.progress}%</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </div>
           </div>
-
-          {/* Floating Pillar Cards */}
-          {PILLARS.map((pillar, index) => (
-            <FloatingPillar
-              key={pillar.id}
-              pillar={pillar}
-              position={pillarPositions[index]}
-              delay={0.3 + index * 0.1}
-              size={index === 0 || index === 3 ? "lg" : index === 7 ? "sm" : "md"}
-            />
-          ))}
         </div>
       </section>
 
