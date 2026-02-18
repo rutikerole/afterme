@@ -11,6 +11,15 @@ import {
   TrendingUp,
   Plus,
   Leaf,
+  Calendar,
+  Users,
+  Gift,
+  Clock,
+  Quote,
+  Shield,
+  Lock,
+  Eye,
+  ArrowRight,
 } from "lucide-react";
 
 import {
@@ -665,9 +674,65 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════════
-          BOTTOM SECTION - Activity, Prompts, Stats
+          INSPIRATIONAL QUOTE SECTION
       ══════════════════════════════════════════════════════════════════ */}
-      <section className="px-6 py-12 mt-auto">
+      <section className="px-6 py-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.6 }}
+          className="max-w-3xl mx-auto text-center"
+        >
+          <div className="relative p-8 bg-gradient-to-br from-sage/5 via-white to-sage-light/10 rounded-3xl border border-sage/10 shadow-sm">
+            <Quote className="absolute top-4 left-4 w-8 h-8 text-sage/20" />
+            <Quote className="absolute bottom-4 right-4 w-8 h-8 text-sage/20 rotate-180" />
+            <p className="font-serif text-xl md:text-2xl text-charcoal/90 leading-relaxed italic">
+              &ldquo;The greatest legacy we can leave our children is happy memories.&rdquo;
+            </p>
+            <p className="mt-4 text-sm text-sage font-medium">— Og Mandino</p>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════
+          QUICK STATS BAR
+      ══════════════════════════════════════════════════════════════════ */}
+      <section className="px-6 py-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
+          className="max-w-5xl mx-auto"
+        >
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { icon: Heart, label: "Memories", value: "156", color: "text-rose-500 bg-rose-50" },
+              { icon: Users, label: "Family Members", value: "4", color: "text-blue-500 bg-blue-50" },
+              { icon: Gift, label: "Scheduled", value: "12", color: "text-amber-500 bg-amber-50" },
+              { icon: Clock, label: "Days Active", value: "45", color: "text-sage bg-sage/10" },
+            ].map((stat, i) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.7 + i * 0.1 }}
+                className="p-5 bg-white/80 backdrop-blur-sm rounded-2xl border border-sage/10 shadow-sm text-center group hover:shadow-md hover:border-sage/20 transition-all"
+              >
+                <div className={`w-12 h-12 rounded-xl ${stat.color} flex items-center justify-center mx-auto mb-3`}>
+                  <stat.icon className="w-6 h-6" />
+                </div>
+                <p className="text-2xl font-serif font-semibold text-charcoal">{stat.value}</p>
+                <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════
+          ACTIVITY, PROMPTS, STATS SECTION
+      ══════════════════════════════════════════════════════════════════ */}
+      <section className="px-6 py-8">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <ActivityCard delay={0.1} />
@@ -678,30 +743,171 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════════
-          FOOTER
+          UPCOMING EVENTS SECTION
       ══════════════════════════════════════════════════════════════════ */}
-      <footer className="px-6 py-8 text-center">
+      <section className="px-6 py-8">
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8, duration: 0.5 }}
+          className="max-w-4xl mx-auto"
         >
-          <div className="flex items-center justify-center gap-3 text-muted-foreground text-sm mb-4">
-            <span className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-sage/50" />
-              Secure
-            </span>
-            <span className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-sage/50" />
-              Private
-            </span>
-            <span className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-sage/50" />
-              Encrypted
-            </span>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-serif text-lg font-medium text-charcoal">Upcoming Moments</h3>
+                <p className="text-xs text-muted-foreground">Messages scheduled for loved ones</p>
+              </div>
+            </div>
+            <Link href="/dashboard/messages">
+              <motion.button
+                whileHover={{ x: 3 }}
+                className="flex items-center gap-1 text-sm text-sage hover:text-sage-dark transition-colors"
+              >
+                View all <ArrowRight className="w-4 h-4" />
+              </motion.button>
+            </Link>
           </div>
-          <p className="text-xs text-muted-foreground/60">
-            Your legacy, preserved forever.
+
+          <div className="space-y-3">
+            {[
+              { name: "Mom's Birthday", date: "March 15, 2024", type: "Birthday Message", daysLeft: 24 },
+              { name: "Wedding Anniversary", date: "April 2, 2024", type: "Anniversary Letter", daysLeft: 42 },
+              { name: "Father's Day", date: "June 16, 2024", type: "Appreciation Note", daysLeft: 117 },
+            ].map((event, i) => (
+              <motion.div
+                key={event.name}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.9 + i * 0.1 }}
+                className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm rounded-xl border border-sage/10 hover:border-sage/20 hover:shadow-sm transition-all group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sage/10 to-sage-light/20 flex items-center justify-center">
+                    <Gift className="w-5 h-5 text-sage" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-charcoal group-hover:text-sage-dark transition-colors">{event.name}</h4>
+                    <p className="text-xs text-muted-foreground">{event.type} • {event.date}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-sage/10 text-sage text-xs font-medium rounded-full">
+                    <Clock className="w-3 h-3" />
+                    {event.daysLeft} days
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════
+          FAMILY ACTIVITY SECTION
+      ══════════════════════════════════════════════════════════════════ */}
+      <section className="px-6 py-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1, duration: 0.5 }}
+          className="max-w-4xl mx-auto"
+        >
+          <div className="p-6 bg-gradient-to-br from-sage/5 via-white to-cream rounded-2xl border border-sage/15">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sage/20 to-sage-light/30 flex items-center justify-center">
+                <Eye className="w-5 h-5 text-sage" />
+              </div>
+              <div>
+                <h3 className="font-serif text-lg font-medium text-charcoal">Family Activity</h3>
+                <p className="text-xs text-muted-foreground">Recent views from your trusted circle</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {[
+                { name: "Sarah", action: "viewed", item: "Wedding Day Memories", time: "2 hours ago", avatar: "S" },
+                { name: "Michael", action: "downloaded", item: "Family Photo Album", time: "Yesterday", avatar: "M" },
+                { name: "Emma", action: "listened to", item: "Birthday Voice Message", time: "3 days ago", avatar: "E" },
+              ].map((activity, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1.1 + i * 0.1 }}
+                  className="flex items-center gap-3 p-3 bg-white/60 rounded-xl"
+                >
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-sage to-sage-dark flex items-center justify-center text-white text-sm font-medium">
+                    {activity.avatar}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-charcoal">
+                      <span className="font-medium">{activity.name}</span>{" "}
+                      <span className="text-muted-foreground">{activity.action}</span>{" "}
+                      <span className="font-medium text-sage-dark">{activity.item}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">{activity.time}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════
+          EMOTIONAL FOOTER
+      ══════════════════════════════════════════════════════════════════ */}
+      <footer className="px-6 py-16 mt-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.2, duration: 0.6 }}
+          className="max-w-2xl mx-auto text-center"
+        >
+          {/* Decorative line */}
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <div className="h-px w-16 bg-gradient-to-r from-transparent to-sage/30" />
+            <Leaf className="w-5 h-5 text-sage/50" />
+            <div className="h-px w-16 bg-gradient-to-l from-transparent to-sage/30" />
+          </div>
+
+          <h3 className="font-serif text-2xl text-charcoal mb-3">
+            Your story matters.
+          </h3>
+          <p className="text-muted-foreground leading-relaxed mb-8">
+            Every memory you preserve, every message you record, every moment you capture —
+            they all become part of a beautiful legacy that will touch hearts for generations to come.
+          </p>
+
+          {/* Trust badges */}
+          <div className="flex items-center justify-center gap-6 mb-8">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Shield className="w-4 h-4 text-sage" />
+              <span>Bank-level Security</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Lock className="w-4 h-4 text-sage" />
+              <span>End-to-end Encrypted</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Heart className="w-4 h-4 text-sage" />
+              <span>Made with Love</span>
+            </div>
+          </div>
+
+          {/* Brand */}
+          <div className="flex items-center justify-center gap-2 text-sage/70">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sage to-sage-dark flex items-center justify-center">
+              <Heart className="w-4 h-4 text-white" fill="white" />
+            </div>
+            <span className="font-serif text-lg">AfterMe</span>
+          </div>
+          <p className="text-xs text-muted-foreground/50 mt-3">
+            Preserving legacies, one memory at a time.
           </p>
         </motion.div>
       </footer>
