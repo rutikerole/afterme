@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect, useSyncExternalStore } from "react";
+import { useRef, useState, useEffect, useSyncExternalStore, useMemo } from "react";
 import { motion, useInView } from "framer-motion";
 import Link from "next/link";
 import {
@@ -21,27 +21,70 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-import { PILLARS } from "@/lib/constants";
+import { PILLARS, INSPIRATIONAL_QUOTES, type Pillar } from "@/lib/constants";
 import {
   getGreetingByHour,
-  calculateOverallProgress,
   getFirstName,
 } from "@/lib/utils";
+
+// ════════════════════════════════════════════════════════════════════════════
+// TYPES
+// ════════════════════════════════════════════════════════════════════════════
 
 interface DashboardProps {
   userName: string;
 }
 
+interface DashboardStats {
+  memories: number;
+  familyMembers: number;
+  scheduledMessages: number;
+  daysActive: number;
+}
+
+interface PillarStats {
+  [key: string]: {
+    items: number;
+    progress: number;
+  };
+}
+
+interface UpcomingEvent {
+  id: string;
+  name: string;
+  date: string;
+  type: string;
+  title: string;
+  daysLeft: number;
+}
+
+interface FamilyActivity {
+  id: string;
+  name: string;
+  avatar: string;
+  action: string;
+  item: string;
+  time: string;
+}
+
+interface DashboardData {
+  stats: DashboardStats;
+  pillarStats: PillarStats;
+  overallProgress: number;
+  upcomingEvents: UpcomingEvent[];
+  familyActivity: FamilyActivity[];
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // CENTRAL LEGACY HUB - The heart of the dashboard
 // ════════════════════════════════════════════════════════════════════════════
-function LegacyHub({ progress }: { progress: number }) {
+function LegacyHub({ progress, isLoading }: { progress: number; isLoading?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true });
   const [displayProgress, setDisplayProgress] = useState(0);
 
   useEffect(() => {
-    if (!isInView) return;
+    if (!isInView || isLoading) return;
     let current = 0;
     const interval = setInterval(() => {
       current += 1;
@@ -53,7 +96,7 @@ function LegacyHub({ progress }: { progress: number }) {
       }
     }, 25);
     return () => clearInterval(interval);
-  }, [isInView, progress]);
+  }, [isInView, progress, isLoading]);
 
   const size = 220;
   const strokeWidth = 8;
@@ -123,7 +166,7 @@ function LegacyHub({ progress }: { progress: number }) {
             strokeLinecap="round"
             strokeDasharray={circumference}
             initial={{ strokeDashoffset: circumference }}
-            animate={isInView ? { strokeDashoffset: circumference - (circumference * progress) / 100 } : {}}
+            animate={isInView && !isLoading ? { strokeDashoffset: circumference - (circumference * progress) / 100 } : {}}
             transition={{ duration: 2, ease: [0.16, 1, 0.3, 1], delay: 0.5 }}
           />
         </svg>
@@ -142,8 +185,14 @@ function LegacyHub({ progress }: { progress: number }) {
           <p className="text-[10px] uppercase tracking-[0.2em] text-sage/70 mb-1">Legacy Strength</p>
 
           <div className="flex items-baseline gap-1">
-            <span className="text-5xl font-serif font-semibold text-charcoal">{displayProgress}</span>
-            <span className="text-xl text-sage">%</span>
+            {isLoading ? (
+              <div className="w-16 h-12 bg-sage/10 rounded animate-pulse" />
+            ) : (
+              <>
+                <span className="text-5xl font-serif font-semibold text-charcoal">{displayProgress}</span>
+                <span className="text-xl text-sage">%</span>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -170,7 +219,70 @@ function LegacyHub({ progress }: { progress: number }) {
   );
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// LOADING SKELETON COMPONENTS
+// ════════════════════════════════════════════════════════════════════════════
 
+function StatsSkeleton() {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="text-center">
+          <div className="w-14 h-14 rounded-2xl bg-sage/10 mx-auto mb-4 animate-pulse" />
+          <div className="w-12 h-8 bg-sage/10 rounded mx-auto mb-2 animate-pulse" />
+          <div className="w-20 h-4 bg-sage/10 rounded mx-auto animate-pulse" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EventsSkeleton() {
+  return (
+    <div className="space-y-3">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="flex items-center gap-4 p-4 bg-white/80 rounded-xl">
+          <div className="w-12 h-12 rounded-xl bg-sage/10 animate-pulse" />
+          <div className="flex-1">
+            <div className="w-32 h-4 bg-sage/10 rounded mb-2 animate-pulse" />
+            <div className="w-48 h-3 bg-sage/10 rounded animate-pulse" />
+          </div>
+          <div className="w-20 h-6 bg-sage/10 rounded-full animate-pulse" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EmptyState({ icon: Icon, title, description, actionHref, actionLabel }: {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  actionHref?: string;
+  actionLabel?: string;
+}) {
+  return (
+    <div className="text-center py-8">
+      <div className="w-16 h-16 rounded-2xl bg-sage/10 flex items-center justify-center mx-auto mb-4">
+        <Icon className="w-8 h-8 text-sage/50" />
+      </div>
+      <h4 className="font-medium text-charcoal mb-1">{title}</h4>
+      <p className="text-sm text-muted-foreground mb-4">{description}</p>
+      {actionHref && actionLabel && (
+        <Link href={actionHref}>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-sage hover:bg-sage-dark text-white rounded-full text-sm font-medium transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            {actionLabel}
+          </motion.button>
+        </Link>
+      )}
+    </div>
+  );
+}
 
 // ════════════════════════════════════════════════════════════════════════════
 // MAIN DASHBOARD COMPONENT
@@ -182,9 +294,62 @@ const getServerSnapshot = () => false;
 export function InteractiveDashboard({ userName }: DashboardProps) {
   const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const firstName = getFirstName(userName);
-  const overallProgress = calculateOverallProgress(PILLARS);
   const greeting = getGreetingByHour();
   const GreetingIcon = greeting.icon;
+
+  // State for fetched data
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Random quote - memoized to prevent changes on re-render
+  const randomQuote = useMemo(() => {
+    const index = Math.floor(Math.random() * INSPIRATIONAL_QUOTES.length);
+    return INSPIRATIONAL_QUOTES[index];
+  }, []);
+
+  // Fetch dashboard data
+  useEffect(() => {
+    async function fetchDashboardData() {
+      try {
+        setIsLoading(true);
+        const response = await fetch("/api/dashboard/stats");
+        if (!response.ok) {
+          throw new Error("Failed to fetch dashboard data");
+        }
+        const data = await response.json();
+        setDashboardData(data);
+      } catch (err) {
+        console.error("Dashboard fetch error:", err);
+        // Silently fail - dashboard will show default values
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    if (mounted) {
+      fetchDashboardData();
+    }
+  }, [mounted]);
+
+  // Merge real pillar stats with PILLARS constants
+  const pillarsWithRealData: Pillar[] = useMemo(() => {
+    if (!dashboardData?.pillarStats) return PILLARS;
+
+    return PILLARS.map((pillar) => {
+      const stats = dashboardData.pillarStats[pillar.id];
+      if (stats) {
+        return {
+          ...pillar,
+          items: stats.items,
+          progress: stats.progress,
+        };
+      }
+      return pillar;
+    });
+  }, [dashboardData]);
+
+  // Calculate overall progress
+  const overallProgress = dashboardData?.overallProgress ?? 0;
 
   if (!mounted) {
     return (
@@ -265,7 +430,7 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
       {/* ══════════════════════════════════════════════════════════════════
           MAIN SECTION - Central Hub with Pillars on Sides (Desktop)
       ══════════════════════════════════════════════════════════════════ */}
-      <section className="hidden lg:block px-6 py-16 relative">
+      <section className="hidden lg:block px-6 py-16 relative" id="pillars">
         {/* Connection Lines SVG */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
           <defs>
@@ -316,7 +481,7 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
           <div className="flex items-stretch justify-center gap-12">
             {/* Left Pillars Column */}
             <div className="flex flex-col gap-4 w-[300px]">
-              {PILLARS.slice(0, 4).map((pillar, index) => {
+              {pillarsWithRealData.slice(0, 4).map((pillar, index) => {
                 const Icon = pillar.icon;
                 return (
                   <motion.div
@@ -389,12 +554,12 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
 
             {/* Central Legacy Hub */}
             <div className="flex-shrink-0 flex items-center justify-center px-8">
-              <LegacyHub progress={overallProgress} />
+              <LegacyHub progress={overallProgress} isLoading={isLoading} />
             </div>
 
             {/* Right Pillars Column */}
             <div className="flex flex-col gap-4 w-[300px]">
-              {PILLARS.slice(4, 8).map((pillar, index) => {
+              {pillarsWithRealData.slice(4, 8).map((pillar, index) => {
                 const Icon = pillar.icon;
                 return (
                   <motion.div
@@ -471,16 +636,16 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
       {/* ══════════════════════════════════════════════════════════════════
           MOBILE/TABLET - Card Grid Layout
       ══════════════════════════════════════════════════════════════════ */}
-      <section className="lg:hidden px-6 py-8">
+      <section className="lg:hidden px-6 py-8" id="pillars-mobile">
         <div className="max-w-2xl mx-auto">
           {/* Central Hub */}
           <div className="flex justify-center mb-12">
-            <LegacyHub progress={overallProgress} />
+            <LegacyHub progress={overallProgress} isLoading={isLoading} />
           </div>
 
           {/* Pillars Grid */}
           <div className="grid grid-cols-2 gap-4">
-            {PILLARS.map((pillar, index) => {
+            {pillarsWithRealData.map((pillar, index) => {
               const Icon = pillar.icon;
               return (
                 <motion.div
@@ -509,7 +674,7 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════════
-          INSPIRATIONAL QUOTE SECTION
+          INSPIRATIONAL QUOTE SECTION - Dynamic Quote
       ══════════════════════════════════════════════════════════════════ */}
       <section className="px-6 py-10">
         <motion.div
@@ -522,15 +687,14 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
             <Quote className="absolute top-4 left-4 w-8 h-8 text-sage/20" />
             <Quote className="absolute bottom-4 right-4 w-8 h-8 text-sage/20 rotate-180" />
             <p className="font-serif text-xl md:text-2xl text-charcoal/90 leading-relaxed italic">
-              &ldquo;The greatest legacy we can leave our children is happy memories.&rdquo;
+              &ldquo;{randomQuote}&rdquo;
             </p>
-            <p className="mt-4 text-sm text-sage font-medium">— Og Mandino</p>
           </div>
         </motion.div>
       </section>
 
       {/* ══════════════════════════════════════════════════════════════════
-          QUICK STATS BAR - Connected Theme Design
+          QUICK STATS BAR - Connected Theme Design with Real Data
       ══════════════════════════════════════════════════════════════════ */}
       <section className="px-6 py-10">
         <motion.div
@@ -557,52 +721,56 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
             <div className="absolute bottom-3 left-3 w-8 h-8 border-l-2 border-b-2 border-sage/20 rounded-bl-xl" />
             <div className="absolute bottom-3 right-3 w-8 h-8 border-r-2 border-b-2 border-sage/20 rounded-br-xl" />
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
-              {[
-                { icon: Heart, label: "Memories", value: "156", subtext: "Preserved", gradient: "from-sage/15 to-sage/25" },
-                { icon: Users, label: "Family Circle", value: "4", subtext: "Members", gradient: "from-sage/10 to-sage-light/20" },
-                { icon: Gift, label: "Scheduled", value: "12", subtext: "Messages", gradient: "from-sage/15 to-sage/25" },
-                { icon: Clock, label: "Days Active", value: "45", subtext: "Building", gradient: "from-sage/10 to-sage-light/20" },
-              ].map((stat, i) => (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.7 + i * 0.1 }}
-                  className="relative group"
-                >
-                  {/* Connecting line between stats (hidden on mobile, shown between items) */}
-                  {i < 3 && (
-                    <div className="hidden md:block absolute top-1/2 -right-4 w-8 h-px bg-gradient-to-r from-sage/30 to-sage/10" />
-                  )}
+            {isLoading ? (
+              <StatsSkeleton />
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+                {[
+                  { icon: Heart, label: "Memories", value: dashboardData?.stats.memories ?? 0, subtext: "Preserved", gradient: "from-sage/15 to-sage/25" },
+                  { icon: Users, label: "Family Circle", value: dashboardData?.stats.familyMembers ?? 0, subtext: "Members", gradient: "from-sage/10 to-sage-light/20" },
+                  { icon: Gift, label: "Scheduled", value: dashboardData?.stats.scheduledMessages ?? 0, subtext: "Messages", gradient: "from-sage/15 to-sage/25" },
+                  { icon: Clock, label: "Days Active", value: dashboardData?.stats.daysActive ?? 1, subtext: "Building", gradient: "from-sage/10 to-sage-light/20" },
+                ].map((stat, i) => (
+                  <motion.div
+                    key={stat.label}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7 + i * 0.1 }}
+                    className="relative group"
+                  >
+                    {/* Connecting line between stats (hidden on mobile, shown between items) */}
+                    {i < 3 && (
+                      <div className="hidden md:block absolute top-1/2 -right-4 w-8 h-px bg-gradient-to-r from-sage/30 to-sage/10" />
+                    )}
 
-                  <div className="text-center">
-                    {/* Icon with sage gradient */}
-                    <motion.div
-                      whileHover={{ scale: 1.1, rotate: [0, -5, 5, 0] }}
-                      transition={{ duration: 0.3 }}
-                      className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center mx-auto mb-4 border border-sage/10 group-hover:border-sage/30 group-hover:shadow-lg group-hover:shadow-sage/15 transition-all duration-300`}
-                    >
-                      <stat.icon className="w-6 h-6 text-sage-dark group-hover:text-sage transition-colors" />
-                    </motion.div>
+                    <div className="text-center">
+                      {/* Icon with sage gradient */}
+                      <motion.div
+                        whileHover={{ scale: 1.1, rotate: [0, -5, 5, 0] }}
+                        transition={{ duration: 0.3 }}
+                        className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center mx-auto mb-4 border border-sage/10 group-hover:border-sage/30 group-hover:shadow-lg group-hover:shadow-sage/15 transition-all duration-300`}
+                      >
+                        <stat.icon className="w-6 h-6 text-sage-dark group-hover:text-sage transition-colors" />
+                      </motion.div>
 
-                    {/* Value with animation */}
-                    <motion.p
-                      initial={{ scale: 0.8 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.8 + i * 0.1, type: "spring" }}
-                      className="text-3xl font-serif font-semibold text-charcoal group-hover:text-sage-dark transition-colors"
-                    >
-                      {stat.value}
-                    </motion.p>
+                      {/* Value with animation */}
+                      <motion.p
+                        initial={{ scale: 0.8 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 0.8 + i * 0.1, type: "spring" }}
+                        className="text-3xl font-serif font-semibold text-charcoal group-hover:text-sage-dark transition-colors"
+                      >
+                        {stat.value}
+                      </motion.p>
 
-                    {/* Label */}
-                    <p className="text-sm font-medium text-charcoal/80 mt-1">{stat.label}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{stat.subtext}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+                      {/* Label */}
+                      <p className="text-sm font-medium text-charcoal/80 mt-1">{stat.label}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{stat.subtext}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
 
             {/* Bottom decorative element */}
             <div className="flex items-center justify-center mt-6 pt-4 border-t border-sage/10">
@@ -731,7 +899,7 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════════
-          UPCOMING EVENTS SECTION
+          UPCOMING EVENTS SECTION - Real Data
       ══════════════════════════════════════════════════════════════════ */}
       <section className="px-6 py-8">
         <motion.div
@@ -760,42 +928,50 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
             </Link>
           </div>
 
-          <div className="space-y-3">
-            {[
-              { name: "Mom's Birthday", date: "March 15, 2024", type: "Birthday Message", daysLeft: 24 },
-              { name: "Wedding Anniversary", date: "April 2, 2024", type: "Anniversary Letter", daysLeft: 42 },
-              { name: "Father's Day", date: "June 16, 2024", type: "Appreciation Note", daysLeft: 117 },
-            ].map((event, i) => (
-              <motion.div
-                key={event.name}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.9 + i * 0.1 }}
-                className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm rounded-xl border border-sage/10 hover:border-sage/20 hover:shadow-sm transition-all group"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sage/10 to-sage-light/20 flex items-center justify-center">
-                    <Gift className="w-5 h-5 text-sage" />
+          {isLoading ? (
+            <EventsSkeleton />
+          ) : dashboardData?.upcomingEvents && dashboardData.upcomingEvents.length > 0 ? (
+            <div className="space-y-3">
+              {dashboardData.upcomingEvents.map((event, i) => (
+                <motion.div
+                  key={event.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.9 + i * 0.1 }}
+                  className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm rounded-xl border border-sage/10 hover:border-sage/20 hover:shadow-sm transition-all group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sage/10 to-sage-light/20 flex items-center justify-center">
+                      <Gift className="w-5 h-5 text-sage" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-charcoal group-hover:text-sage-dark transition-colors">{event.title || event.name}</h4>
+                      <p className="text-xs text-muted-foreground">{event.type} • {event.date}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-medium text-charcoal group-hover:text-sage-dark transition-colors">{event.name}</h4>
-                    <p className="text-xs text-muted-foreground">{event.type} • {event.date}</p>
+                  <div className="text-right">
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-sage/10 text-sage text-xs font-medium rounded-full">
+                      <Clock className="w-3 h-3" />
+                      {event.daysLeft} days
+                    </span>
                   </div>
-                </div>
-                <div className="text-right">
-                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-sage/10 text-sage text-xs font-medium rounded-full">
-                    <Clock className="w-3 h-3" />
-                    {event.daysLeft} days
-                  </span>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon={Calendar}
+              title="No upcoming messages"
+              description="Schedule messages for birthdays, anniversaries, and special moments"
+              actionHref="/dashboard/messages"
+              actionLabel="Schedule a Message"
+            />
+          )}
         </motion.div>
       </section>
 
       {/* ══════════════════════════════════════════════════════════════════
-          FAMILY ACTIVITY SECTION
+          FAMILY ACTIVITY SECTION - Real Data
       ══════════════════════════════════════════════════════════════════ */}
       <section className="px-6 py-8">
         <motion.div
@@ -815,33 +991,58 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
               </div>
             </div>
 
-            <div className="space-y-3">
-              {[
-                { name: "Sarah", action: "viewed", item: "Wedding Day Memories", time: "2 hours ago", avatar: "S" },
-                { name: "Michael", action: "downloaded", item: "Family Photo Album", time: "Yesterday", avatar: "M" },
-                { name: "Emma", action: "listened to", item: "Birthday Voice Message", time: "3 days ago", avatar: "E" },
-              ].map((activity, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 1.1 + i * 0.1 }}
-                  className="flex items-center gap-3 p-3 bg-white/60 rounded-xl"
-                >
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-sage to-sage-dark flex items-center justify-center text-white text-sm font-medium">
-                    {activity.avatar}
+            {isLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center gap-3 p-3 bg-white/60 rounded-xl">
+                    <div className="w-9 h-9 rounded-full bg-sage/10 animate-pulse" />
+                    <div className="flex-1">
+                      <div className="w-48 h-4 bg-sage/10 rounded mb-1 animate-pulse" />
+                      <div className="w-24 h-3 bg-sage/10 rounded animate-pulse" />
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-charcoal">
-                      <span className="font-medium">{activity.name}</span>{" "}
-                      <span className="text-muted-foreground">{activity.action}</span>{" "}
-                      <span className="font-medium text-sage-dark">{activity.item}</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">{activity.time}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : dashboardData?.familyActivity && dashboardData.familyActivity.length > 0 ? (
+              <div className="space-y-3">
+                {dashboardData.familyActivity.map((activity, i) => (
+                  <motion.div
+                    key={activity.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.1 + i * 0.1 }}
+                    className="flex items-center gap-3 p-3 bg-white/60 rounded-xl"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-sage to-sage-dark flex items-center justify-center text-white text-sm font-medium">
+                      {activity.avatar}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-charcoal">
+                        <span className="font-medium">{activity.name}</span>{" "}
+                        <span className="text-muted-foreground">{activity.action}</span>{" "}
+                        <span className="font-medium text-sage-dark">{activity.item}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">{activity.time}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <Users className="w-10 h-10 text-sage/30 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">
+                  No recent activity from your trusted circle
+                </p>
+                <Link href="/dashboard/family">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    className="mt-3 text-sm text-sage hover:text-sage-dark transition-colors"
+                  >
+                    Invite family members
+                  </motion.button>
+                </Link>
+              </div>
+            )}
           </div>
         </motion.div>
       </section>
@@ -872,7 +1073,7 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
           </p>
 
           {/* Trust badges */}
-          <div className="flex items-center justify-center gap-6 mb-8">
+          <div className="flex items-center justify-center gap-6 mb-8 flex-wrap">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Shield className="w-4 h-4 text-sage" />
               <span>Bank-level Security</span>
@@ -908,7 +1109,7 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
         className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 lg:hidden"
       >
         <div className="flex gap-1 p-2 rounded-2xl bg-white/90 backdrop-blur-xl border border-sage/20 shadow-lg">
-          {PILLARS.slice(0, 4).map((pillar) => {
+          {pillarsWithRealData.slice(0, 4).map((pillar) => {
             const Icon = pillar.icon;
             return (
               <Link key={pillar.id} href={pillar.href}>
@@ -921,7 +1122,7 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
               </Link>
             );
           })}
-          <Link href="#pillars">
+          <Link href="#pillars-mobile">
             <div className="w-12 h-12 rounded-xl flex items-center justify-center hover:bg-sage/10 transition-colors">
               <Plus className="w-5 h-5 text-sage/70" />
             </div>
