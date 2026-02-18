@@ -285,6 +285,220 @@ function EmptyState({ icon: Icon, title, description, actionHref, actionLabel }:
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// DECORATIVE COMPONENTS - Floating leaves, wavy lines, particles
+// ════════════════════════════════════════════════════════════════════════════
+
+// Floating Leaf SVG Component
+function FloatingLeaf({
+  className = "",
+  size = 24,
+  delay = 0,
+  duration = 8,
+  variant = 1
+}: {
+  className?: string;
+  size?: number;
+  delay?: number;
+  duration?: number;
+  variant?: number;
+}) {
+  const paths = [
+    "M12 2C12 2 6 7 6 12C6 15.5 8.5 18 12 18C15.5 18 18 15.5 18 12C18 7 12 2 12 2Z", // Classic leaf
+    "M12 3C9 6 6 10 7 15C8 18 10 20 12 20C14 20 16 18 17 15C18 10 15 6 12 3Z", // Elongated leaf
+    "M12 2C8 5 5 9 6 14C7 17 9 19 12 19C15 19 17 17 18 14C19 9 16 5 12 2Z", // Wide leaf
+  ];
+
+  return (
+    <motion.svg
+      className={className}
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      initial={{ opacity: 0, y: -20, rotate: -45 }}
+      animate={{
+        opacity: [0, 0.6, 0.6, 0],
+        y: [0, 100, 200, 300],
+        x: [0, 20, -10, 30],
+        rotate: [-45, 0, 45, 90]
+      }}
+      transition={{
+        duration,
+        delay,
+        repeat: Infinity,
+        ease: "easeInOut"
+      }}
+    >
+      <path
+        d={paths[(variant - 1) % 3]}
+        fill="hsl(var(--sage))"
+        fillOpacity="0.3"
+        stroke="hsl(var(--sage))"
+        strokeWidth="1"
+        strokeOpacity="0.5"
+      />
+      <path
+        d="M12 6V16M12 10L9 13M12 12L15 15"
+        stroke="hsl(var(--sage))"
+        strokeWidth="0.75"
+        strokeOpacity="0.4"
+        strokeLinecap="round"
+      />
+    </motion.svg>
+  );
+}
+
+// Animated Floating Dots
+function FloatingDots() {
+  const dots = [
+    { size: 4, left: "5%", top: "15%", delay: 0, duration: 6 },
+    { size: 6, left: "12%", top: "35%", delay: 1.5, duration: 8 },
+    { size: 3, left: "8%", top: "55%", delay: 0.8, duration: 5 },
+    { size: 5, left: "15%", top: "75%", delay: 2, duration: 7 },
+    { size: 4, right: "8%", top: "20%", delay: 0.5, duration: 6 },
+    { size: 6, right: "15%", top: "40%", delay: 1, duration: 9 },
+    { size: 3, right: "10%", top: "60%", delay: 2.5, duration: 5 },
+    { size: 5, right: "5%", top: "80%", delay: 1.8, duration: 7 },
+  ];
+
+  return (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden -z-5">
+      {dots.map((dot, i) => (
+        <motion.div
+          key={i}
+          className="absolute rounded-full bg-sage/30"
+          style={{
+            width: dot.size,
+            height: dot.size,
+            left: dot.left,
+            right: dot.right,
+            top: dot.top,
+          }}
+          animate={{
+            y: [0, -30, 0],
+            opacity: [0.3, 0.6, 0.3],
+            scale: [1, 1.2, 1],
+          }}
+          transition={{
+            duration: dot.duration,
+            delay: dot.delay,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// Wavy SVG Divider
+function WavyDivider({ flip = false, className = "" }: { flip?: boolean; className?: string }) {
+  return (
+    <div className={`w-full overflow-hidden ${flip ? "rotate-180" : ""} ${className}`}>
+      <svg
+        viewBox="0 0 1200 120"
+        preserveAspectRatio="none"
+        className="w-full h-16 md:h-24"
+      >
+        <motion.path
+          d="M0,60 C150,120 350,0 600,60 C850,120 1050,0 1200,60 L1200,120 L0,120 Z"
+          fill="url(#waveGradient)"
+          initial={{ d: "M0,60 C150,120 350,0 600,60 C850,120 1050,0 1200,60 L1200,120 L0,120 Z" }}
+          animate={{
+            d: [
+              "M0,60 C150,120 350,0 600,60 C850,120 1050,0 1200,60 L1200,120 L0,120 Z",
+              "M0,80 C150,20 350,100 600,40 C850,0 1050,80 1200,40 L1200,120 L0,120 Z",
+              "M0,60 C150,120 350,0 600,60 C850,120 1050,0 1200,60 L1200,120 L0,120 Z",
+            ]
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+        <defs>
+          <linearGradient id="waveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="hsl(var(--sage))" stopOpacity="0.08" />
+            <stop offset="50%" stopColor="hsl(var(--sage))" stopOpacity="0.15" />
+            <stop offset="100%" stopColor="hsl(var(--sage))" stopOpacity="0.08" />
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+  );
+}
+
+// Organic Branch/Vine Decoration
+function VineDecoration({ side = "left", className = "" }: { side?: "left" | "right"; className?: string }) {
+  const isLeft = side === "left";
+
+  return (
+    <motion.svg
+      className={`absolute ${isLeft ? "left-0" : "right-0"} pointer-events-none ${className}`}
+      width="120"
+      height="300"
+      viewBox="0 0 120 300"
+      style={{ transform: isLeft ? "none" : "scaleX(-1)" }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 1.5 }}
+    >
+      {/* Main vine */}
+      <motion.path
+        d="M0,0 Q60,50 40,100 Q20,150 50,200 Q80,250 30,300"
+        fill="none"
+        stroke="hsl(var(--sage))"
+        strokeWidth="2"
+        strokeOpacity="0.2"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 3, ease: "easeOut" }}
+      />
+
+      {/* Small leaves along the vine */}
+      {[50, 100, 150, 200, 250].map((y, i) => (
+        <motion.g key={i}>
+          <motion.ellipse
+            cx={i % 2 === 0 ? 45 + i * 3 : 35 - i * 2}
+            cy={y}
+            rx="8"
+            ry="12"
+            fill="hsl(var(--sage))"
+            fillOpacity="0.15"
+            initial={{ scale: 0, rotate: i % 2 === 0 ? 30 : -30 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.5 + i * 0.3, duration: 0.5 }}
+            style={{ transformOrigin: "center" }}
+          />
+        </motion.g>
+      ))}
+    </motion.svg>
+  );
+}
+
+// Floating Leaves Container
+function FloatingLeavesBackground() {
+  return (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden -z-5">
+      {/* Left side leaves */}
+      <FloatingLeaf className="absolute left-[5%]" size={20} delay={0} duration={12} variant={1} />
+      <FloatingLeaf className="absolute left-[15%]" size={28} delay={3} duration={15} variant={2} />
+      <FloatingLeaf className="absolute left-[10%]" size={16} delay={6} duration={10} variant={3} />
+
+      {/* Right side leaves */}
+      <FloatingLeaf className="absolute right-[8%]" size={24} delay={2} duration={14} variant={2} />
+      <FloatingLeaf className="absolute right-[18%]" size={18} delay={5} duration={11} variant={1} />
+      <FloatingLeaf className="absolute right-[12%]" size={22} delay={8} duration={13} variant={3} />
+
+      {/* Center scattered */}
+      <FloatingLeaf className="absolute left-[40%]" size={14} delay={4} duration={16} variant={1} />
+      <FloatingLeaf className="absolute right-[35%]" size={20} delay={7} duration={12} variant={2} />
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // MAIN DASHBOARD COMPONENT
 // ════════════════════════════════════════════════════════════════════════════
 const subscribe = () => () => {};
@@ -371,10 +585,20 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-sage/3 rounded-full blur-[150px]" />
       </div>
 
+      {/* Floating leaves animation */}
+      <FloatingLeavesBackground />
+
+      {/* Floating dots particles */}
+      <FloatingDots />
+
+      {/* Vine decorations on sides */}
+      <VineDecoration side="left" className="top-[200px] opacity-50 hidden lg:block" />
+      <VineDecoration side="right" className="top-[400px] opacity-50 hidden lg:block" />
+
       {/* ══════════════════════════════════════════════════════════════════
           HERO SECTION - Greeting & Quick Actions
       ══════════════════════════════════════════════════════════════════ */}
-      <section className="px-6 pt-8 pb-6">
+      <section className="px-6 pt-8 pb-6 relative">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             {/* Left: Greeting */}
@@ -673,10 +897,13 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
         </div>
       </section>
 
+      {/* Wavy Divider */}
+      <WavyDivider className="-mt-4 -mb-8" />
+
       {/* ══════════════════════════════════════════════════════════════════
           INSPIRATIONAL QUOTE SECTION - Dynamic Quote
       ══════════════════════════════════════════════════════════════════ */}
-      <section className="px-6 py-10">
+      <section className="px-6 py-10 relative">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -783,10 +1010,13 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
         </motion.div>
       </section>
 
+      {/* Wavy Divider */}
+      <WavyDivider flip className="-mt-6 -mb-6" />
+
       {/* ══════════════════════════════════════════════════════════════════
           QUICK ACTIONS - Elegant Sage Theme
       ══════════════════════════════════════════════════════════════════ */}
-      <section className="px-6 py-12">
+      <section className="px-6 py-12 relative">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -898,10 +1128,13 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
         </motion.div>
       </section>
 
+      {/* Wavy Divider */}
+      <WavyDivider className="-mt-8 -mb-4" />
+
       {/* ══════════════════════════════════════════════════════════════════
           UPCOMING EVENTS SECTION - Real Data
       ══════════════════════════════════════════════════════════════════ */}
-      <section className="px-6 py-8">
+      <section className="px-6 py-8 relative">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
