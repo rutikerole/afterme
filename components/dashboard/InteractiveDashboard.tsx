@@ -421,54 +421,119 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
       {/* ══════════════════════════════════════════════════════════════════
           MAIN SECTION - Central Hub with Pillars on Sides (Desktop)
       ══════════════════════════════════════════════════════════════════ */}
-      <section className="hidden lg:block px-6 py-12">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-center gap-8">
+      <section className="hidden lg:block px-6 py-16 relative">
+        {/* Connection Lines SVG */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
+          <defs>
+            <linearGradient id="lineGradientLeft" x1="100%" y1="0%" x2="0%" y2="0%">
+              <stop offset="0%" stopColor="hsl(var(--sage))" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="hsl(var(--sage))" stopOpacity="0.05" />
+            </linearGradient>
+            <linearGradient id="lineGradientRight" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="hsl(var(--sage))" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="hsl(var(--sage))" stopOpacity="0.05" />
+            </linearGradient>
+          </defs>
+          {/* Left side connection lines */}
+          {[0, 1, 2, 3].map((i) => (
+            <motion.line
+              key={`left-${i}`}
+              x1="50%"
+              y1="50%"
+              x2="22%"
+              y2={`${18 + i * 22}%`}
+              stroke="url(#lineGradientLeft)"
+              strokeWidth="1.5"
+              strokeDasharray="8 4"
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={{ pathLength: 1, opacity: 1 }}
+              transition={{ duration: 1.2, delay: 0.3 + i * 0.15, ease: "easeOut" }}
+            />
+          ))}
+          {/* Right side connection lines */}
+          {[0, 1, 2, 3].map((i) => (
+            <motion.line
+              key={`right-${i}`}
+              x1="50%"
+              y1="50%"
+              x2="78%"
+              y2={`${18 + i * 22}%`}
+              stroke="url(#lineGradientRight)"
+              strokeWidth="1.5"
+              strokeDasharray="8 4"
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={{ pathLength: 1, opacity: 1 }}
+              transition={{ duration: 1.2, delay: 0.3 + i * 0.15, ease: "easeOut" }}
+            />
+          ))}
+        </svg>
+
+        <div className="max-w-7xl mx-auto relative" style={{ zIndex: 1 }}>
+          <div className="flex items-stretch justify-center gap-12">
             {/* Left Pillars Column */}
-            <div className="flex flex-col gap-5 w-[280px]">
+            <div className="flex flex-col gap-4 w-[300px]">
               {PILLARS.slice(0, 4).map((pillar, index) => {
                 const Icon = pillar.icon;
                 return (
                   <motion.div
                     key={pillar.id}
-                    initial={{ opacity: 0, x: -30 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 + index * 0.1 }}
+                    initial={{ opacity: 0, x: -40, scale: 0.95 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    transition={{
+                      delay: 0.3 + index * 0.12,
+                      duration: 0.6,
+                      ease: [0.16, 1, 0.3, 1]
+                    }}
                   >
                     <Link href={pillar.href}>
                       <motion.div
-                        whileHover={{ scale: 1.03, x: 5 }}
+                        whileHover={{
+                          scale: 1.02,
+                          x: 8,
+                          boxShadow: "0 20px 40px -15px rgba(var(--sage-rgb), 0.25), 0 0 0 1px rgba(var(--sage-rgb), 0.1)"
+                        }}
                         whileTap={{ scale: 0.98 }}
-                        className="p-5 bg-white/90 backdrop-blur-sm rounded-2xl border border-sage/15 shadow-lg shadow-sage/10 hover:shadow-xl hover:shadow-sage/15 hover:border-sage/30 transition-all cursor-pointer group"
+                        className="relative p-4 bg-white/95 backdrop-blur-md rounded-2xl border border-sage/10 shadow-lg shadow-sage/5 cursor-pointer group overflow-hidden"
                       >
-                        <div className="flex items-start gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sage/15 to-sage-light/30 flex items-center justify-center flex-shrink-0 group-hover:from-sage/25 group-hover:to-sage-light/40 transition-all">
-                            <Icon className="w-6 h-6 text-sage-dark" />
-                          </div>
+                        {/* Subtle gradient overlay on hover */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-sage/0 via-sage/0 to-sage/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                        <div className="relative flex items-center gap-4">
+                          {/* Icon with glow effect */}
+                          <motion.div
+                            className="relative flex-shrink-0"
+                            whileHover={{ rotate: [0, -5, 5, 0] }}
+                            transition={{ duration: 0.5 }}
+                          >
+                            <div className="absolute inset-0 bg-sage/20 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-sage/10 via-sage/15 to-sage-light/25 flex items-center justify-center border border-sage/10 group-hover:border-sage/25 transition-all">
+                              <Icon className="w-5 h-5 text-sage-dark group-hover:text-sage transition-colors" />
+                            </div>
+                          </motion.div>
+
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-serif text-base font-medium text-charcoal mb-1 group-hover:text-sage-dark transition-colors">
+                            <h3 className="font-serif text-[15px] font-medium text-charcoal group-hover:text-sage-dark transition-colors">
                               {pillar.name}
                             </h3>
-                            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                            <p className="text-[11px] text-muted-foreground/80 line-clamp-1 mt-0.5">
                               {pillar.description}
                             </p>
                           </div>
-                        </div>
-                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-sage/10">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-lg font-serif font-medium text-sage">{pillar.items}</span>
-                            <span className="text-[10px] text-muted-foreground uppercase">items</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="w-16 h-1.5 bg-sage/10 rounded-full overflow-hidden">
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${pillar.progress}%` }}
-                                transition={{ delay: 0.5 + index * 0.1, duration: 0.8 }}
-                                className="h-full bg-gradient-to-r from-sage to-sage-dark rounded-full"
-                              />
+
+                          {/* Stats on right */}
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-lg font-serif font-semibold text-sage">{pillar.items}</span>
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-10 h-1 bg-sage/10 rounded-full overflow-hidden">
+                                <motion.div
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${pillar.progress}%` }}
+                                  transition={{ delay: 0.6 + index * 0.1, duration: 1, ease: "easeOut" }}
+                                  className="h-full bg-gradient-to-r from-sage to-sage-dark rounded-full"
+                                />
+                              </div>
+                              <span className="text-[10px] text-sage font-medium">{pillar.progress}%</span>
                             </div>
-                            <span className="text-xs text-sage font-medium">{pillar.progress}%</span>
                           </div>
                         </div>
                       </motion.div>
@@ -479,55 +544,74 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
             </div>
 
             {/* Central Legacy Hub */}
-            <div className="flex-shrink-0 mx-8">
+            <div className="flex-shrink-0 flex items-center justify-center px-8">
               <LegacyHub progress={overallProgress} />
             </div>
 
             {/* Right Pillars Column */}
-            <div className="flex flex-col gap-5 w-[280px]">
+            <div className="flex flex-col gap-4 w-[300px]">
               {PILLARS.slice(4, 8).map((pillar, index) => {
                 const Icon = pillar.icon;
                 return (
                   <motion.div
                     key={pillar.id}
-                    initial={{ opacity: 0, x: 30 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 + index * 0.1 }}
+                    initial={{ opacity: 0, x: 40, scale: 0.95 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    transition={{
+                      delay: 0.3 + index * 0.12,
+                      duration: 0.6,
+                      ease: [0.16, 1, 0.3, 1]
+                    }}
                   >
                     <Link href={pillar.href}>
                       <motion.div
-                        whileHover={{ scale: 1.03, x: -5 }}
+                        whileHover={{
+                          scale: 1.02,
+                          x: -8,
+                          boxShadow: "0 20px 40px -15px rgba(var(--sage-rgb), 0.25), 0 0 0 1px rgba(var(--sage-rgb), 0.1)"
+                        }}
                         whileTap={{ scale: 0.98 }}
-                        className="p-5 bg-white/90 backdrop-blur-sm rounded-2xl border border-sage/15 shadow-lg shadow-sage/10 hover:shadow-xl hover:shadow-sage/15 hover:border-sage/30 transition-all cursor-pointer group"
+                        className="relative p-4 bg-white/95 backdrop-blur-md rounded-2xl border border-sage/10 shadow-lg shadow-sage/5 cursor-pointer group overflow-hidden"
                       >
-                        <div className="flex items-start gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sage/15 to-sage-light/30 flex items-center justify-center flex-shrink-0 group-hover:from-sage/25 group-hover:to-sage-light/40 transition-all">
-                            <Icon className="w-6 h-6 text-sage-dark" />
-                          </div>
+                        {/* Subtle gradient overlay on hover */}
+                        <div className="absolute inset-0 bg-gradient-to-l from-sage/0 via-sage/0 to-sage/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                        <div className="relative flex items-center gap-4">
+                          {/* Icon with glow effect */}
+                          <motion.div
+                            className="relative flex-shrink-0"
+                            whileHover={{ rotate: [0, -5, 5, 0] }}
+                            transition={{ duration: 0.5 }}
+                          >
+                            <div className="absolute inset-0 bg-sage/20 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-sage/10 via-sage/15 to-sage-light/25 flex items-center justify-center border border-sage/10 group-hover:border-sage/25 transition-all">
+                              <Icon className="w-5 h-5 text-sage-dark group-hover:text-sage transition-colors" />
+                            </div>
+                          </motion.div>
+
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-serif text-base font-medium text-charcoal mb-1 group-hover:text-sage-dark transition-colors">
+                            <h3 className="font-serif text-[15px] font-medium text-charcoal group-hover:text-sage-dark transition-colors">
                               {pillar.name}
                             </h3>
-                            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                            <p className="text-[11px] text-muted-foreground/80 line-clamp-1 mt-0.5">
                               {pillar.description}
                             </p>
                           </div>
-                        </div>
-                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-sage/10">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-lg font-serif font-medium text-sage">{pillar.items}</span>
-                            <span className="text-[10px] text-muted-foreground uppercase">items</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="w-16 h-1.5 bg-sage/10 rounded-full overflow-hidden">
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${pillar.progress}%` }}
-                                transition={{ delay: 0.5 + index * 0.1, duration: 0.8 }}
-                                className="h-full bg-gradient-to-r from-sage to-sage-dark rounded-full"
-                              />
+
+                          {/* Stats on right */}
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-lg font-serif font-semibold text-sage">{pillar.items}</span>
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-10 h-1 bg-sage/10 rounded-full overflow-hidden">
+                                <motion.div
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${pillar.progress}%` }}
+                                  transition={{ delay: 0.6 + index * 0.1, duration: 1, ease: "easeOut" }}
+                                  className="h-full bg-gradient-to-r from-sage to-sage-dark rounded-full"
+                                />
+                              </div>
+                              <span className="text-[10px] text-sage font-medium">{pillar.progress}%</span>
                             </div>
-                            <span className="text-xs text-sage font-medium">{pillar.progress}%</span>
                           </div>
                         </div>
                       </motion.div>
