@@ -6,7 +6,6 @@ import Link from "next/link";
 import {
   Mic,
   Heart,
-  Sparkles,
   BookOpen,
   TrendingUp,
   Plus,
@@ -22,15 +21,11 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-import {
-  PILLARS,
-  MEMORY_PROMPTS,
-} from "@/lib/constants";
+import { PILLARS } from "@/lib/constants";
 import {
   getGreetingByHour,
   calculateOverallProgress,
   getFirstName,
-  getDailyItem,
 } from "@/lib/utils";
 
 interface DashboardProps {
@@ -176,165 +171,6 @@ function LegacyHub({ progress }: { progress: number }) {
 }
 
 
-// ════════════════════════════════════════════════════════════════════════════
-// QUICK ACTION CARD
-// ════════════════════════════════════════════════════════════════════════════
-function QuickActionCard({
-  icon: Icon,
-  title,
-  description,
-  href,
-  color = "sage",
-  delay = 0
-}: {
-  icon: typeof Mic;
-  title: string;
-  description: string;
-  href: string;
-  color?: "sage" | "amber" | "rose";
-  delay?: number;
-}) {
-  const colorClasses = {
-    sage: "from-sage/20 to-sage-light/30 text-sage-dark",
-    amber: "from-amber-100 to-amber-50 text-amber-700",
-    rose: "from-rose-100 to-rose-50 text-rose-700",
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.5 }}
-    >
-      <Link href={href}>
-        <motion.div
-          whileHover={{ scale: 1.02, y: -3 }}
-          whileTap={{ scale: 0.98 }}
-          className="p-5 bg-white/80 backdrop-blur-sm rounded-2xl border border-sage/15 shadow-md hover:shadow-lg hover:border-sage/25 transition-all cursor-pointer group"
-        >
-          <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${colorClasses[color]} flex items-center justify-center mb-4`}>
-            <Icon className="w-6 h-6" />
-          </div>
-          <h4 className="font-medium text-charcoal mb-1 group-hover:text-sage-dark transition-colors">{title}</h4>
-          <p className="text-sm text-muted-foreground">{description}</p>
-        </motion.div>
-      </Link>
-    </motion.div>
-  );
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// ACTIVITY CARD
-// ════════════════════════════════════════════════════════════════════════════
-function ActivityCard({ delay = 0 }: { delay?: number }) {
-  const activities = [
-    { icon: Mic, text: "Voice message recorded", time: "2 days ago", color: "text-rose-500 bg-rose-50" },
-    { icon: Heart, text: "3 memories added", time: "5 days ago", color: "text-pink-500 bg-pink-50" },
-  ];
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.5 }}
-      className="p-5 bg-white/80 backdrop-blur-sm rounded-2xl border border-sage/15 shadow-md"
-    >
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-2 h-2 rounded-full bg-sage animate-pulse" />
-        <span className="text-xs uppercase tracking-wider text-sage font-medium">Recent Activity</span>
-      </div>
-
-      <div className="space-y-3">
-        {activities.map((activity, i) => (
-          <div key={i} className="flex items-center gap-3 p-3 bg-sage/5 rounded-xl">
-            <div className={`w-9 h-9 rounded-lg ${activity.color} flex items-center justify-center`}>
-              <activity.icon className="w-4 h-4" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-charcoal truncate">{activity.text}</p>
-              <p className="text-xs text-muted-foreground">{activity.time}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </motion.div>
-  );
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// MEMORY PROMPT CARD
-// ════════════════════════════════════════════════════════════════════════════
-function MemoryPromptCard({ prompt, delay = 0 }: { prompt: string; delay?: number }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.5 }}
-      className="p-5 bg-gradient-to-br from-amber-50/80 to-orange-50/60 backdrop-blur-sm rounded-2xl border border-amber-200/50 shadow-md"
-    >
-      <div className="flex items-center gap-2 mb-3">
-        <Sparkles className="w-4 h-4 text-amber-500" />
-        <span className="text-xs uppercase tracking-wider text-amber-600 font-medium">Memory Prompt</span>
-      </div>
-
-      <p className="font-serif text-lg text-amber-900 leading-relaxed mb-4">
-        &ldquo;{prompt}&rdquo;
-      </p>
-
-      <Link href="/dashboard/stories">
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="flex items-center gap-2 px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 rounded-lg text-sm font-medium transition-colors"
-        >
-          <BookOpen className="w-4 h-4" />
-          Write about it
-        </motion.button>
-      </Link>
-    </motion.div>
-  );
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// JOURNEY STATS CARD
-// ════════════════════════════════════════════════════════════════════════════
-function JourneyStatsCard({ delay = 0 }: { delay?: number }) {
-  const weekActivity = [true, true, true, true, true, false, false]; // Last 7 days
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.5 }}
-      className="p-5 bg-gradient-to-br from-sage-light/40 to-sage/10 backdrop-blur-sm rounded-2xl border border-sage/20 shadow-md"
-    >
-      <div className="flex items-center gap-2 mb-4">
-        <TrendingUp className="w-4 h-4 text-sage" />
-        <span className="text-xs uppercase tracking-wider text-sage font-medium">Your Journey</span>
-      </div>
-
-      <div className="flex items-baseline gap-2 mb-2">
-        <span className="text-4xl font-serif font-semibold text-sage-dark">12</span>
-        <span className="text-sm text-sage">days active</span>
-      </div>
-
-      <p className="text-sm text-muted-foreground mb-4">
-        You&apos;re building something meaningful. Keep going!
-      </p>
-
-      {/* Week activity dots */}
-      <div className="flex items-center gap-2">
-        {weekActivity.map((active, i) => (
-          <div
-            key={i}
-            className={`w-4 h-4 rounded-full ${active ? 'bg-sage' : 'bg-sage/20'}`}
-          />
-        ))}
-      </div>
-      <p className="text-[10px] text-muted-foreground mt-2">This week&apos;s activity</p>
-    </motion.div>
-  );
-}
 
 // ════════════════════════════════════════════════════════════════════════════
 // MAIN DASHBOARD COMPONENT
@@ -349,7 +185,6 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
   const overallProgress = calculateOverallProgress(PILLARS);
   const greeting = getGreetingByHour();
   const GreetingIcon = greeting.icon;
-  const dailyPrompt = getDailyItem(MEMORY_PROMPTS);
 
   if (!mounted) {
     return (
@@ -781,17 +616,116 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════════
-          ACTIVITY, PROMPTS, STATS SECTION
+          QUICK ACTIONS GRID - What would you like to do?
       ══════════════════════════════════════════════════════════════════ */}
-      <section className="px-6 py-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <ActivityCard delay={0.1} />
-            <MemoryPromptCard prompt={dailyPrompt} delay={0.2} />
-            <JourneyStatsCard delay={0.3} />
+      <section className="px-6 py-10">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.7 }}
+          className="max-w-5xl mx-auto"
+        >
+          {/* Section Header */}
+          <div className="text-center mb-8">
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+              className="text-sm font-medium text-sage uppercase tracking-wider mb-2"
+            >
+              Quick Actions
+            </motion.p>
+            <motion.h2
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.9 }}
+              className="font-serif text-2xl text-charcoal"
+            >
+              What would you like to preserve today?
+            </motion.h2>
           </div>
-        </div>
+
+          {/* Action Cards Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { icon: Mic, label: "Record Voice", desc: "Leave a message", href: "/dashboard/voice", gradient: "from-rose-500/10 to-pink-500/10", iconColor: "text-rose-500" },
+              { icon: Heart, label: "Add Memory", desc: "Capture a moment", href: "/dashboard/memories", gradient: "from-sage/15 to-sage-light/20", iconColor: "text-sage" },
+              { icon: BookOpen, label: "Write Story", desc: "Share your journey", href: "/dashboard/stories", gradient: "from-amber-500/10 to-orange-500/10", iconColor: "text-amber-600" },
+              { icon: Gift, label: "Schedule", desc: "Plan a surprise", href: "/dashboard/messages", gradient: "from-blue-500/10 to-indigo-500/10", iconColor: "text-blue-500" },
+            ].map((action, i) => (
+              <motion.div
+                key={action.label}
+                initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ delay: 1 + i * 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <Link href={action.href}>
+                  <motion.div
+                    whileHover={{ y: -8, scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`relative p-6 bg-gradient-to-br ${action.gradient} rounded-2xl border border-sage/10 cursor-pointer group overflow-hidden h-full`}
+                  >
+                    {/* Animated background glow */}
+                    <motion.div
+                      className="absolute inset-0 bg-white/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ duration: 3, repeat: Infinity }}
+                    />
+
+                    <div className="relative">
+                      <motion.div
+                        whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
+                        transition={{ duration: 0.5 }}
+                        className="w-12 h-12 rounded-xl bg-white/80 shadow-sm flex items-center justify-center mb-4 group-hover:shadow-md transition-shadow"
+                      >
+                        <action.icon className={`w-6 h-6 ${action.iconColor}`} />
+                      </motion.div>
+                      <h3 className="font-medium text-charcoal group-hover:text-sage-dark transition-colors">{action.label}</h3>
+                      <p className="text-xs text-muted-foreground mt-1">{action.desc}</p>
+                    </div>
+
+                    {/* Arrow indicator on hover */}
+                    <motion.div
+                      initial={{ opacity: 0, x: -10 }}
+                      whileHover={{ opacity: 1, x: 0 }}
+                      className="absolute bottom-4 right-4"
+                    >
+                      <ArrowRight className="w-4 h-4 text-sage" />
+                    </motion.div>
+                  </motion.div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
       </section>
+
+      {/* ══════════════════════════════════════════════════════════════════
+          FLOATING PARTICLES / DECORATIVE ELEMENTS
+      ══════════════════════════════════════════════════════════════════ */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-5">
+        {[...Array(6)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-2 h-2 rounded-full bg-sage/20"
+            style={{
+              left: `${15 + i * 15}%`,
+              top: `${20 + (i % 3) * 25}%`,
+            }}
+            animate={{
+              y: [0, -30, 0],
+              opacity: [0.3, 0.6, 0.3],
+              scale: [1, 1.2, 1],
+            }}
+            transition={{
+              duration: 4 + i,
+              repeat: Infinity,
+              delay: i * 0.5,
+              ease: "easeInOut",
+            }}
+          />
+        ))}
+      </div>
 
       {/* ══════════════════════════════════════════════════════════════════
           UPCOMING EVENTS SECTION
