@@ -43,7 +43,8 @@
       "Bash(npx vercel:*)",
       "Bash(npm i:*)",
       "Bash(npx web-push generate-vapid-keys)",
-      "Bash(timeout /t 90 /nobreak)"
+      "Bash(timeout /t 90 /nobreak)",
+      "Bash(timeout /t 5 /nobreak)"
     ]
   }
 }

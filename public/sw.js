@@ -9,8 +9,7 @@ self.addEventListener("install", (event) => {
       return cache.addAll([
         "/",
         "/offline",
-        "/icons/icon-192x192.png",
-        "/icons/icon-512x512.png",
+        "/favicon.svg",
       ]).catch((error) => {
         console.log("[SW] Cache addAll failed:", error);
       });
@@ -40,8 +39,7 @@ self.addEventListener("push", (event) => {
   let data = {
     title: "AfterMe",
     body: "You have a new notification",
-    icon: "/icons/icon-192x192.png",
-    badge: "/icons/badge-72x72.png",
+    icon: "/favicon.svg",
     data: {},
   };
 
@@ -55,8 +53,8 @@ self.addEventListener("push", (event) => {
 
   const options = {
     body: data.body,
-    icon: data.icon || "/icons/icon-192x192.png",
-    badge: data.badge || "/icons/badge-72x72.png",
+    icon: data.icon || "/favicon.svg",
+    badge: data.badge || "/favicon.svg",
     tag: data.tag || "default",
     data: data.data,
     vibrate: [100, 50, 100],
@@ -78,18 +76,14 @@ self.addEventListener("notificationclick", (event) => {
   const action = event.action;
   const notificationData = event.notification.data || {};
 
-  // Handle different actions
   let targetUrl = "/dashboard";
 
   if (action) {
-    // Handle specific actions
     switch (action) {
       case "taken":
-        // Mark medicine as taken - could send to API
         targetUrl = "/dashboard/eldercare";
         break;
       case "snooze":
-        // Snooze notification - could schedule a new one
         return;
       case "check-in":
         targetUrl = "/dashboard/eldercare";
@@ -113,14 +107,12 @@ self.addEventListener("notificationclick", (event) => {
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true })
       .then((windowClients) => {
-        // Check if there's already a window open
         for (const client of windowClients) {
           if (client.url.includes(self.location.origin) && "focus" in client) {
             client.navigate(targetUrl);
             return client.focus();
           }
         }
-        // Open a new window if none found
         if (clients.openWindow) {
           return clients.openWindow(targetUrl);
         }
@@ -143,22 +135,17 @@ self.addEventListener("sync", (event) => {
 });
 
 async function syncMemories() {
-  // Sync any offline memories when back online
   console.log("[SW] Syncing memories...");
 }
 
 // Fetch handler - network first, fall back to cache
 self.addEventListener("fetch", (event) => {
-  // Skip non-GET requests
   if (event.request.method !== "GET") return;
-
-  // Skip API requests
   if (event.request.url.includes("/api/")) return;
 
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Clone the response for caching
         const responseClone = response.clone();
         caches.open(CACHE_NAME).then((cache) => {
           cache.put(event.request, responseClone);
@@ -170,7 +157,6 @@ self.addEventListener("fetch", (event) => {
           if (cachedResponse) {
             return cachedResponse;
           }
-          // Return offline page for navigation requests
           if (event.request.mode === "navigate") {
             return caches.match(OFFLINE_URL);
           }

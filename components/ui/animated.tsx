@@ -1,6 +1,6 @@
 "use client";
 
-import { useScrollAnimation, useParallax } from "@/lib/hooks/useScrollAnimation";
+import { useScrollAnimation, useParallax } from "@/hooks/useScrollAnimation";
 import { cn } from "@/lib/utils";
 
 interface AnimatedSectionProps {

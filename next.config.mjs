@@ -43,6 +43,9 @@ const sentryOptions = {
   hideSourceMaps: true,
   // Automatically tree-shake Sentry logger statements
   disableLogger: true,
+  // Disable automatic instrumentation of pages router (we use app router only)
+  autoInstrumentServerFunctions: false,
+  autoInstrumentAppDirectory: true,
 };
 
 // Only wrap with Sentry in production

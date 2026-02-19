@@ -98,8 +98,8 @@ function LegacyHub({ progress, isLoading }: { progress: number; isLoading?: bool
     return () => clearInterval(interval);
   }, [isInView, progress, isLoading]);
 
-  const size = 220;
-  const strokeWidth = 8;
+  const size = 180;
+  const strokeWidth = 6;
   const radius = (size - strokeWidth * 2) / 2;
   const circumference = radius * 2 * Math.PI;
 
@@ -114,22 +114,22 @@ function LegacyHub({ progress, isLoading }: { progress: number; isLoading?: bool
       {/* Outer glow rings */}
       <div className="absolute inset-0 flex items-center justify-center">
         <motion.div
-          animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
+          animate={{ scale: [1, 1.08, 1], opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 4, repeat: Infinity }}
-          className="absolute w-[280px] h-[280px] rounded-full border border-sage/20"
+          className="absolute w-[230px] h-[230px] rounded-full border border-sage/20"
         />
         <motion.div
-          animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.4, 0.2] }}
+          animate={{ scale: [1, 1.12, 1], opacity: [0.2, 0.4, 0.2] }}
           transition={{ duration: 5, repeat: Infinity, delay: 1 }}
-          className="absolute w-[320px] h-[320px] rounded-full border border-sage/10"
+          className="absolute w-[260px] h-[260px] rounded-full border border-sage/10"
         />
-        <div className="absolute w-[360px] h-[360px] rounded-full bg-sage/5 blur-3xl" />
+        <div className="absolute w-[290px] h-[290px] rounded-full bg-sage/5 blur-3xl" />
       </div>
 
       {/* Main hub container */}
       <div
-        className="relative rounded-full bg-gradient-to-br from-white via-white to-sage-light/30 shadow-2xl shadow-sage/20 border border-sage/20 flex items-center justify-center"
-        style={{ width: size + 40, height: size + 40 }}
+        className="relative rounded-full bg-gradient-to-br from-white via-white to-sage-light/30 shadow-xl shadow-sage/15 border border-sage/20 flex items-center justify-center"
+        style={{ width: size + 30, height: size + 30 }}
       >
         {/* Progress ring */}
         <svg
@@ -177,41 +177,70 @@ function LegacyHub({ progress, isLoading }: { progress: number; isLoading?: bool
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-            className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sage to-sage-dark flex items-center justify-center mb-3 shadow-lg shadow-sage/30"
+            className="w-11 h-11 rounded-xl bg-gradient-to-br from-sage to-sage-dark flex items-center justify-center mb-2 shadow-md shadow-sage/30"
           >
-            <Leaf className="w-7 h-7 text-white" />
+            <Leaf className="w-5 h-5 text-white" />
           </motion.div>
 
-          <p className="text-[10px] uppercase tracking-[0.2em] text-sage/70 mb-1">Legacy Strength</p>
+          <p className="text-[9px] uppercase tracking-[0.15em] text-sage/60 mb-0.5">Legacy</p>
 
-          <div className="flex items-baseline gap-1">
+          <div className="flex items-baseline gap-0.5">
             {isLoading ? (
-              <div className="w-16 h-12 bg-sage/10 rounded animate-pulse" />
+              <div className="w-12 h-10 bg-sage/10 rounded animate-pulse" />
             ) : (
               <>
-                <span className="text-5xl font-serif font-semibold text-charcoal">{displayProgress}</span>
-                <span className="text-xl text-sage">%</span>
+                <span className="text-4xl font-serif font-semibold text-charcoal">{displayProgress}</span>
+                <span className="text-lg text-sage">%</span>
               </>
             )}
           </div>
         </div>
       </div>
 
-      {/* Nurture button */}
+      {/* Nurture button - Creative artistic design */}
       <motion.div
-        initial={{ y: 20, opacity: 0 }}
+        initial={{ y: 15, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 1.2 }}
-        className="absolute -bottom-6 left-1/2 -translate-x-1/2"
+        transition={{ delay: 1.2, type: "spring", stiffness: 200 }}
+        className="absolute -bottom-5 left-1/2 -translate-x-1/2"
       >
         <Link href="/dashboard/progress">
           <motion.button
-            whileHover={{ scale: 1.05, y: -2 }}
+            whileHover={{ scale: 1.08, y: -2 }}
             whileTap={{ scale: 0.95 }}
-            className="flex items-center gap-2 px-5 py-2.5 bg-sage hover:bg-sage-dark text-white rounded-full text-sm font-medium shadow-lg shadow-sage/30 transition-colors"
+            className="group relative flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-sage via-sage to-sage-dark text-white rounded-full text-sm font-medium shadow-lg shadow-sage/30 transition-all overflow-hidden"
           >
-            <Leaf className="w-4 h-4" />
-            Nurture your Legacy
+            {/* Animated shine sweep */}
+            <motion.div
+              className="absolute inset-0 rounded-full"
+              style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)" }}
+              animate={{ x: ["-100%", "100%"] }}
+              transition={{ duration: 2, repeat: Infinity, repeatDelay: 2 }}
+            />
+
+            {/* Leaf icon with gentle sway */}
+            <motion.div
+              animate={{ rotate: [0, -8, 8, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <Leaf className="w-4 h-4" />
+            </motion.div>
+
+            <span>Nurture</span>
+
+            {/* Sparkle dots */}
+            <div className="flex gap-0.5 ml-0.5">
+              <motion.span
+                className="w-1 h-1 rounded-full bg-white/70"
+                animate={{ opacity: [0.4, 1, 0.4], scale: [1, 1.2, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              />
+              <motion.span
+                className="w-1 h-1 rounded-full bg-white/70"
+                animate={{ opacity: [0.4, 1, 0.4], scale: [1, 1.2, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
+              />
+            </div>
           </motion.button>
         </Link>
       </motion.div>
@@ -391,87 +420,438 @@ function FloatingDots() {
   );
 }
 
-// Wavy SVG Divider
-function WavyDivider({ flip = false, className = "" }: { flip?: boolean; className?: string }) {
+// Botanical Section Divider - Elegant leaf and vine design
+function BotanicalDivider({ variant = 1, className = "" }: { variant?: 1 | 2 | 3; className?: string }) {
   return (
-    <div className={`w-full overflow-hidden ${flip ? "rotate-180" : ""} ${className}`}>
-      <svg
-        viewBox="0 0 1200 120"
-        preserveAspectRatio="none"
-        className="w-full h-16 md:h-24"
-      >
-        <motion.path
-          d="M0,60 C150,120 350,0 600,60 C850,120 1050,0 1200,60 L1200,120 L0,120 Z"
-          fill="url(#waveGradient)"
-          initial={{ d: "M0,60 C150,120 350,0 600,60 C850,120 1050,0 1200,60 L1200,120 L0,120 Z" }}
-          animate={{
-            d: [
-              "M0,60 C150,120 350,0 600,60 C850,120 1050,0 1200,60 L1200,120 L0,120 Z",
-              "M0,80 C150,20 350,100 600,40 C850,0 1050,80 1200,40 L1200,120 L0,120 Z",
-              "M0,60 C150,120 350,0 600,60 C850,120 1050,0 1200,60 L1200,120 L0,120 Z",
-            ]
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
-        <defs>
-          <linearGradient id="waveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="hsl(var(--sage))" stopOpacity="0.08" />
-            <stop offset="50%" stopColor="hsl(var(--sage))" stopOpacity="0.15" />
-            <stop offset="100%" stopColor="hsl(var(--sage))" stopOpacity="0.08" />
-          </linearGradient>
-        </defs>
-      </svg>
+    <div className={`relative w-full py-8 ${className}`}>
+      <div className="max-w-4xl mx-auto px-6">
+        <div className="relative flex items-center justify-center">
+          {/* Left flowing line */}
+          <motion.div
+            className="flex-1 h-px relative overflow-hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1 }}
+          >
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-sage/30 to-sage/50"
+              initial={{ x: "-100%" }}
+              animate={{ x: "0%" }}
+              transition={{ duration: 1.5, ease: "easeOut" }}
+            />
+            {/* Small dots along the line */}
+            <motion.div
+              className="absolute right-[20%] top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-sage/40"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.8, duration: 0.3 }}
+            />
+            <motion.div
+              className="absolute right-[40%] top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-sage/30"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.6, duration: 0.3 }}
+            />
+          </motion.div>
+
+          {/* Center decorative element */}
+          <motion.div
+            className="relative mx-4 flex items-center justify-center"
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ duration: 0.8, type: "spring", stiffness: 100 }}
+          >
+            {variant === 1 && (
+              // Leaf cluster design
+              <div className="relative w-16 h-16 flex items-center justify-center">
+                {/* Center leaf */}
+                <motion.svg
+                  width="28"
+                  height="28"
+                  viewBox="0 0 24 24"
+                  className="absolute"
+                  animate={{ rotate: [0, 5, 0, -5, 0] }}
+                  transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <path
+                    d="M12 2C12 2 6 8 6 14C6 18 8.5 21 12 21C15.5 21 18 18 18 14C18 8 12 2 12 2Z"
+                    fill="hsl(var(--sage))"
+                    fillOpacity="0.2"
+                    stroke="hsl(var(--sage))"
+                    strokeWidth="1.5"
+                    strokeOpacity="0.6"
+                  />
+                  <path
+                    d="M12 6V18M12 10L9 13M12 14L15 17"
+                    stroke="hsl(var(--sage))"
+                    strokeWidth="1"
+                    strokeOpacity="0.4"
+                    strokeLinecap="round"
+                  />
+                </motion.svg>
+                {/* Side leaves */}
+                <motion.svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  className="absolute -left-2 top-1"
+                  style={{ rotate: "-45deg" }}
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4, duration: 0.5 }}
+                >
+                  <path
+                    d="M12 4C12 4 7 9 7 13C7 16 9 18 12 18C15 18 17 16 17 13C17 9 12 4 12 4Z"
+                    fill="hsl(var(--sage))"
+                    fillOpacity="0.15"
+                    stroke="hsl(var(--sage))"
+                    strokeWidth="1"
+                    strokeOpacity="0.4"
+                  />
+                </motion.svg>
+                <motion.svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  className="absolute -right-2 top-1"
+                  style={{ rotate: "45deg" }}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4, duration: 0.5 }}
+                >
+                  <path
+                    d="M12 4C12 4 7 9 7 13C7 16 9 18 12 18C15 18 17 16 17 13C17 9 12 4 12 4Z"
+                    fill="hsl(var(--sage))"
+                    fillOpacity="0.15"
+                    stroke="hsl(var(--sage))"
+                    strokeWidth="1"
+                    strokeOpacity="0.4"
+                  />
+                </motion.svg>
+              </div>
+            )}
+
+            {variant === 2 && (
+              // Circular wreath design
+              <div className="relative w-14 h-14">
+                <motion.div
+                  className="absolute inset-0 rounded-full border-2 border-sage/20"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+                />
+                <motion.div
+                  className="absolute inset-1 rounded-full border border-dashed border-sage/30"
+                  animate={{ rotate: -360 }}
+                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Leaf className="w-5 h-5 text-sage/60" />
+                </div>
+                {/* Small decorative dots around */}
+                {[0, 60, 120, 180, 240, 300].map((angle, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute w-1.5 h-1.5 rounded-full bg-sage/40"
+                    style={{
+                      left: `${50 + 45 * Math.cos((angle * Math.PI) / 180)}%`,
+                      top: `${50 + 45 * Math.sin((angle * Math.PI) / 180)}%`,
+                      transform: "translate(-50%, -50%)"
+                    }}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: [1, 1.3, 1] }}
+                    transition={{ delay: i * 0.1, duration: 2, repeat: Infinity }}
+                  />
+                ))}
+              </div>
+            )}
+
+            {variant === 3 && (
+              // Simple elegant diamond with leaves
+              <div className="relative">
+                <motion.div
+                  className="w-8 h-8 rotate-45 border-2 border-sage/30 bg-sage/5"
+                  animate={{ scale: [1, 1.05, 1] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                />
+                <motion.div
+                  className="absolute inset-0 flex items-center justify-center"
+                  animate={{ rotate: [0, 5, 0, -5, 0] }}
+                  transition={{ duration: 4, repeat: Infinity }}
+                >
+                  <div className="w-2 h-2 rounded-full bg-sage/50" />
+                </motion.div>
+                {/* Tiny leaves on corners */}
+                <motion.svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  className="absolute -top-3 left-1/2 -translate-x-1/2"
+                  initial={{ y: 5, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <path
+                    d="M12 4C12 4 8 8 8 11C8 13 10 15 12 15C14 15 16 13 16 11C16 8 12 4 12 4Z"
+                    fill="hsl(var(--sage))"
+                    fillOpacity="0.3"
+                  />
+                </motion.svg>
+              </div>
+            )}
+          </motion.div>
+
+          {/* Right flowing line */}
+          <motion.div
+            className="flex-1 h-px relative overflow-hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1 }}
+          >
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-l from-transparent via-sage/30 to-sage/50"
+              initial={{ x: "100%" }}
+              animate={{ x: "0%" }}
+              transition={{ duration: 1.5, ease: "easeOut" }}
+            />
+            {/* Small dots along the line */}
+            <motion.div
+              className="absolute left-[20%] top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-sage/40"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.8, duration: 0.3 }}
+            />
+            <motion.div
+              className="absolute left-[40%] top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-sage/30"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.6, duration: 0.3 }}
+            />
+          </motion.div>
+        </div>
+      </div>
     </div>
   );
 }
 
-// Organic Branch/Vine Decoration
+// Organic Branch/Vine Decoration - Artistic Sage Green
 function VineDecoration({ side = "left", className = "" }: { side?: "left" | "right"; className?: string }) {
   const isLeft = side === "left";
+
+  // Leaf positions with artistic placement
+  const leaves = [
+    { y: 60, x: 55, size: 1.2, rotate: 25, delay: 0.5 },
+    { y: 120, x: 35, size: 1, rotate: -35, delay: 0.7 },
+    { y: 180, x: 65, size: 1.3, rotate: 20, delay: 0.9 },
+    { y: 240, x: 30, size: 0.9, rotate: -25, delay: 1.1 },
+    { y: 300, x: 55, size: 1.1, rotate: 30, delay: 1.3 },
+    { y: 360, x: 40, size: 1, rotate: -40, delay: 1.5 },
+    { y: 420, x: 60, size: 1.2, rotate: 15, delay: 1.7 },
+    { y: 480, x: 35, size: 0.85, rotate: -30, delay: 1.9 },
+    { y: 540, x: 50, size: 1.15, rotate: 35, delay: 2.1 },
+    { y: 600, x: 45, size: 1, rotate: -20, delay: 2.3 },
+  ];
+
+  // Small buds/berries positions
+  const buds = [
+    { y: 90, x: 45, size: 4 },
+    { y: 150, x: 50, size: 3 },
+    { y: 210, x: 42, size: 5 },
+    { y: 270, x: 55, size: 3 },
+    { y: 330, x: 38, size: 4 },
+    { y: 390, x: 52, size: 3 },
+    { y: 450, x: 45, size: 5 },
+    { y: 510, x: 48, size: 4 },
+    { y: 570, x: 40, size: 3 },
+  ];
 
   return (
     <motion.svg
       className={`absolute ${isLeft ? "left-0" : "right-0"} pointer-events-none ${className}`}
-      width="120"
-      height="300"
-      viewBox="0 0 120 300"
+      width="100"
+      height="700"
+      viewBox="0 0 100 700"
       style={{ transform: isLeft ? "none" : "scaleX(-1)" }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 1.5 }}
+      transition={{ duration: 1 }}
     >
-      {/* Main vine */}
+      <defs>
+        {/* Gradient for main vine */}
+        <linearGradient id={`vineGradient-${side}`} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="hsl(var(--sage))" stopOpacity="0.1" />
+          <stop offset="30%" stopColor="hsl(var(--sage))" stopOpacity="0.5" />
+          <stop offset="70%" stopColor="hsl(var(--sage))" stopOpacity="0.4" />
+          <stop offset="100%" stopColor="hsl(var(--sage))" stopOpacity="0.15" />
+        </linearGradient>
+
+        {/* Gradient for leaves */}
+        <linearGradient id={`leafGradient-${side}`} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="hsl(var(--sage))" stopOpacity="0.5" />
+          <stop offset="50%" stopColor="hsl(var(--sage))" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="hsl(var(--sage-dark))" stopOpacity="0.25" />
+        </linearGradient>
+
+        {/* Filter for soft glow */}
+        <filter id={`vineGlow-${side}`} x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="2" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* Background glow vine */}
       <motion.path
-        d="M0,0 Q60,50 40,100 Q20,150 50,200 Q80,250 30,300"
+        d="M10,0
+           Q70,40 50,80
+           Q30,120 55,160
+           Q80,200 45,240
+           Q20,280 60,320
+           Q85,360 40,400
+           Q15,440 55,480
+           Q80,520 35,560
+           Q10,600 50,640
+           Q70,680 40,700"
         fill="none"
         stroke="hsl(var(--sage))"
-        strokeWidth="2"
-        strokeOpacity="0.2"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={{ duration: 3, ease: "easeOut" }}
+        strokeWidth="8"
+        strokeOpacity="0.08"
+        strokeLinecap="round"
+        filter={`url(#vineGlow-${side})`}
       />
 
-      {/* Small leaves along the vine */}
-      {[50, 100, 150, 200, 250].map((y, i) => (
-        <motion.g key={i}>
-          <motion.ellipse
-            cx={i % 2 === 0 ? 45 + i * 3 : 35 - i * 2}
-            cy={y}
-            rx="8"
-            ry="12"
-            fill="hsl(var(--sage))"
-            fillOpacity="0.15"
-            initial={{ scale: 0, rotate: i % 2 === 0 ? 30 : -30 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.5 + i * 0.3, duration: 0.5 }}
-            style={{ transformOrigin: "center" }}
+      {/* Main flowing vine */}
+      <motion.path
+        d="M10,0
+           Q70,40 50,80
+           Q30,120 55,160
+           Q80,200 45,240
+           Q20,280 60,320
+           Q85,360 40,400
+           Q15,440 55,480
+           Q80,520 35,560
+           Q10,600 50,640
+           Q70,680 40,700"
+        fill="none"
+        stroke={`url(#vineGradient-${side})`}
+        strokeWidth="3"
+        strokeLinecap="round"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 4, ease: "easeOut" }}
+      />
+
+      {/* Secondary thin vine */}
+      <motion.path
+        d="M15,30
+           Q50,60 40,100
+           Q25,140 45,180
+           Q60,220 35,260
+           Q15,300 50,340
+           Q70,380 30,420
+           Q10,460 45,500
+           Q65,540 25,580
+           Q5,620 40,660"
+        fill="none"
+        stroke="hsl(var(--sage))"
+        strokeWidth="1.5"
+        strokeOpacity="0.25"
+        strokeLinecap="round"
+        strokeDasharray="4 6"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 5, ease: "easeOut", delay: 0.5 }}
+      />
+
+      {/* Artistic leaves */}
+      {leaves.map((leaf, i) => (
+        <motion.g
+          key={i}
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: leaf.delay, duration: 0.6, type: "spring" }}
+        >
+          {/* Leaf shape */}
+          <motion.path
+            d={`M${leaf.x},${leaf.y}
+                Q${leaf.x + 15},${leaf.y - 8} ${leaf.x + 12},${leaf.y - 20}
+                Q${leaf.x + 8},${leaf.y - 28} ${leaf.x},${leaf.y - 25}
+                Q${leaf.x - 8},${leaf.y - 28} ${leaf.x - 12},${leaf.y - 20}
+                Q${leaf.x - 15},${leaf.y - 8} ${leaf.x},${leaf.y}Z`}
+            fill={`url(#leafGradient-${side})`}
+            stroke="hsl(var(--sage))"
+            strokeWidth="0.5"
+            strokeOpacity="0.4"
+            style={{
+              transform: `rotate(${leaf.rotate}deg) scale(${leaf.size})`,
+              transformOrigin: `${leaf.x}px ${leaf.y}px`
+            }}
+          />
+          {/* Leaf vein */}
+          <motion.line
+            x1={leaf.x}
+            y1={leaf.y}
+            x2={leaf.x}
+            y2={leaf.y - 18}
+            stroke="hsl(var(--sage))"
+            strokeWidth="0.5"
+            strokeOpacity="0.3"
+            style={{
+              transform: `rotate(${leaf.rotate}deg) scale(${leaf.size})`,
+              transformOrigin: `${leaf.x}px ${leaf.y}px`
+            }}
           />
         </motion.g>
+      ))}
+
+      {/* Small buds/berries */}
+      {buds.map((bud, i) => (
+        <motion.circle
+          key={`bud-${i}`}
+          cx={bud.x}
+          cy={bud.y}
+          r={bud.size}
+          fill="hsl(var(--sage))"
+          fillOpacity={0.2 + (i % 3) * 0.1}
+          initial={{ scale: 0 }}
+          animate={{ scale: [1, 1.2, 1] }}
+          transition={{
+            scale: { duration: 3, repeat: Infinity, delay: i * 0.3 },
+            default: { delay: 1 + i * 0.15, duration: 0.4 }
+          }}
+        />
+      ))}
+
+      {/* Tiny decorative dots along vine */}
+      {[40, 130, 220, 310, 400, 490, 580, 670].map((y, i) => (
+        <motion.circle
+          key={`dot-${i}`}
+          cx={i % 2 === 0 ? 52 : 38}
+          cy={y}
+          r={2}
+          fill="hsl(var(--sage-dark))"
+          fillOpacity="0.3"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 2 + i * 0.1, duration: 0.3 }}
+        />
+      ))}
+
+      {/* Curly tendrils */}
+      {[100, 250, 400, 550].map((y, i) => (
+        <motion.path
+          key={`tendril-${i}`}
+          d={`M${i % 2 === 0 ? 58 : 32},${y} q${i % 2 === 0 ? 15 : -15},5 ${i % 2 === 0 ? 12 : -12},15 q${i % 2 === 0 ? -5 : 5},8 ${i % 2 === 0 ? 8 : -8},12`}
+          fill="none"
+          stroke="hsl(var(--sage))"
+          strokeWidth="1"
+          strokeOpacity="0.3"
+          strokeLinecap="round"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ delay: 2.5 + i * 0.3, duration: 0.8 }}
+        />
       ))}
     </motion.svg>
   );
@@ -592,62 +972,259 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
       <FloatingDots />
 
       {/* Vine decorations on sides */}
-      <VineDecoration side="left" className="top-[200px] opacity-50 hidden lg:block" />
-      <VineDecoration side="right" className="top-[400px] opacity-50 hidden lg:block" />
+      <VineDecoration side="left" className="top-[100px] opacity-80 hidden lg:block" />
+      <VineDecoration side="right" className="top-[300px] opacity-80 hidden lg:block" />
 
       {/* ══════════════════════════════════════════════════════════════════
           HERO SECTION - Greeting & Quick Actions
       ══════════════════════════════════════════════════════════════════ */}
-      <section className="px-6 pt-8 pb-6 relative">
+      <section className="px-6 pt-8 pb-10 relative">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            {/* Left: Greeting */}
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm border border-sage/20 rounded-full mb-4">
-                <GreetingIcon className="w-4 h-4 text-amber-500" />
-                <span className="text-sm text-charcoal/80">{greeting.text}</span>
+          {/* Hero Card Container */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-white via-sage-light/20 to-sage/10 border border-sage/15 shadow-xl shadow-sage/10"
+          >
+            {/* Decorative Background Elements */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              {/* Large gradient orb */}
+              <div className="absolute -top-20 -right-20 w-80 h-80 bg-sage/15 rounded-full blur-3xl" />
+              <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-sage-light/20 rounded-full blur-2xl" />
+
+              {/* Animated floating leaves in hero */}
+              <motion.div
+                className="absolute top-8 right-[15%]"
+                animate={{ y: [0, -10, 0], rotate: [0, 5, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <Leaf className="w-6 h-6 text-sage/20" />
+              </motion.div>
+              <motion.div
+                className="absolute bottom-12 right-[25%]"
+                animate={{ y: [0, 8, 0], rotate: [0, -5, 0] }}
+                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+              >
+                <Leaf className="w-5 h-5 text-sage/15" />
+              </motion.div>
+              <motion.div
+                className="absolute top-1/2 right-[10%]"
+                animate={{ y: [0, -6, 0], rotate: [0, 8, 0] }}
+                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+              >
+                <Leaf className="w-4 h-4 text-sage/25" />
+              </motion.div>
+
+              {/* Decorative circles */}
+              <motion.div
+                className="absolute top-6 left-[30%] w-2 h-2 rounded-full bg-sage/30"
+                animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0.6, 0.3] }}
+                transition={{ duration: 3, repeat: Infinity }}
+              />
+              <motion.div
+                className="absolute bottom-8 left-[20%] w-3 h-3 rounded-full bg-sage/20"
+                animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0.5, 0.2] }}
+                transition={{ duration: 4, repeat: Infinity, delay: 1 }}
+              />
+
+              {/* Subtle pattern lines */}
+              <svg className="absolute inset-0 w-full h-full opacity-[0.03]" style={{ zIndex: 0 }}>
+                <defs>
+                  <pattern id="heroPattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <circle cx="20" cy="20" r="1" fill="currentColor" className="text-sage" />
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#heroPattern)" />
+              </svg>
+            </div>
+
+            {/* Content */}
+            <div className="relative z-10 px-6 py-6 md:px-10 md:py-8">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                {/* Left: Greeting */}
+                <motion.div
+                  initial={{ opacity: 0, x: -30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                >
+                  {/* Time Badge with glow */}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-sm border border-sage/20 rounded-full mb-4 shadow-sm"
+                  >
+                    <motion.div
+                      animate={{ rotate: [0, 10, -10, 0] }}
+                      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                    >
+                      <GreetingIcon className="w-5 h-5 text-amber-500" />
+                    </motion.div>
+                    <span className="text-sm font-medium text-charcoal/80">{greeting.text}</span>
+                    <div className="w-1 h-1 rounded-full bg-sage/40" />
+                    <span className="text-xs text-sage/60">
+                      {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                    </span>
+                  </motion.div>
+
+                  {/* Main Greeting */}
+                  <div className="mb-2">
+                    <motion.h1
+                      className="font-serif text-4xl sm:text-5xl lg:text-6xl font-medium tracking-tight"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4, duration: 0.6 }}
+                    >
+                      <span className="text-charcoal">Hello, </span>
+                      <span className="relative">
+                        <span className="text-sage">{firstName}</span>
+                        {/* Underline decoration */}
+                        <motion.svg
+                          className="absolute -bottom-2 left-0 w-full"
+                          viewBox="0 0 100 8"
+                          initial={{ pathLength: 0, opacity: 0 }}
+                          animate={{ pathLength: 1, opacity: 1 }}
+                          transition={{ delay: 0.8, duration: 0.8, ease: "easeOut" }}
+                        >
+                          <motion.path
+                            d="M0 4 Q25 0, 50 4 T100 4"
+                            fill="none"
+                            stroke="hsl(var(--sage))"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeOpacity="0.4"
+                          />
+                        </motion.svg>
+                      </span>
+                    </motion.h1>
+                  </div>
+
+                  {/* Subtitle with animated typing effect feel */}
+                  <motion.p
+                    className="text-lg text-muted-foreground max-w-md"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.6, duration: 0.5 }}
+                  >
+                    What would you like to{" "}
+                    <span className="text-sage font-medium">preserve</span>{" "}
+                    today?
+                  </motion.p>
+
+                  {/* Quick Stats Badges */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8 }}
+                    className="flex flex-wrap items-center gap-2 mt-4"
+                  >
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-sage/10 rounded-full">
+                      <Heart className="w-3.5 h-3.5 text-sage" />
+                      <span className="text-xs font-medium text-sage-dark">
+                        {dashboardData?.stats.memories ?? 0} memories
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-sage/10 rounded-full">
+                      <Users className="w-3.5 h-3.5 text-sage" />
+                      <span className="text-xs font-medium text-sage-dark">
+                        {dashboardData?.stats.familyMembers ?? 0} family members
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 rounded-full">
+                      <Gift className="w-3.5 h-3.5 text-amber-600" />
+                      <span className="text-xs font-medium text-amber-700">
+                        {dashboardData?.stats.scheduledMessages ?? 0} scheduled
+                      </span>
+                    </div>
+                  </motion.div>
+                </motion.div>
+
+                {/* Right: Quick Actions */}
+                <motion.div
+                  initial={{ opacity: 0, x: 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.4 }}
+                  className="flex flex-col gap-4"
+                >
+                  {/* Primary Action - Record Voice */}
+                  <Link href="/dashboard/voice">
+                    <motion.div
+                      whileHover={{ scale: 1.02, y: -3 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="relative group cursor-pointer"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-sage to-sage-dark rounded-2xl blur-lg opacity-40 group-hover:opacity-60 transition-opacity" />
+                      <div className="relative flex items-center gap-4 px-6 py-4 bg-gradient-to-r from-sage to-sage-dark text-white rounded-2xl shadow-lg">
+                        <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                          <motion.div
+                            animate={{ scale: [1, 1.1, 1] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                          >
+                            <Mic className="w-6 h-6" />
+                          </motion.div>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-lg">Record a Message</p>
+                          <p className="text-sm text-white/70">Let them hear your voice forever</p>
+                        </div>
+                        <ArrowRight className="w-5 h-5 ml-auto opacity-60 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                      </div>
+                    </motion.div>
+                  </Link>
+
+                  {/* Secondary Actions - Artistic Asymmetric Layout */}
+                  <div className="relative flex items-start gap-3">
+                    {/* Add Memory - Larger, offset up */}
+                    <Link href="/dashboard/memories">
+                      <motion.div
+                        whileHover={{ scale: 1.03, y: -3, rotate: -1 }}
+                        whileTap={{ scale: 0.97 }}
+                        className="relative -mt-1 flex items-center gap-3 px-5 py-3 bg-white/95 backdrop-blur-sm border border-sage/20 rounded-2xl shadow-md hover:shadow-lg hover:border-rose-200 transition-all cursor-pointer group"
+                        style={{ transform: "rotate(-1deg)" }}
+                      >
+                        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-rose-100 via-rose-50 to-pink-100 flex items-center justify-center shadow-inner">
+                          <Heart className="w-5 h-5 text-rose-500" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-charcoal group-hover:text-rose-600 transition-colors">Add Memory</p>
+                          <p className="text-[11px] text-muted-foreground">Preserve moments</p>
+                        </div>
+                        {/* Decorative dot */}
+                        <div className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-400/60" />
+                      </motion.div>
+                    </Link>
+
+                    {/* Write Story - Smaller, offset down */}
+                    <Link href="/dashboard/stories">
+                      <motion.div
+                        whileHover={{ scale: 1.05, y: -2, rotate: 1 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="relative mt-2 flex items-center gap-2.5 px-4 py-2.5 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200/50 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                        style={{ transform: "rotate(2deg)" }}
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-200 to-orange-200 flex items-center justify-center">
+                          <BookOpen className="w-4 h-4 text-amber-700" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm text-amber-900 group-hover:text-amber-700 transition-colors">Write Story</p>
+                          <p className="text-[10px] text-amber-600/70">Share journey</p>
+                        </div>
+                      </motion.div>
+                    </Link>
+
+                    {/* Connecting decorative element */}
+                    <svg className="absolute -left-2 top-1/2 w-4 h-8 -translate-y-1/2 opacity-30" viewBox="0 0 16 32">
+                      <path d="M8 0 Q0 16 8 32" fill="none" stroke="hsl(var(--sage))" strokeWidth="1" strokeDasharray="2 2" />
+                    </svg>
+                  </div>
+                </motion.div>
               </div>
+            </div>
 
-              <h1 className="font-serif text-4xl sm:text-5xl font-medium tracking-tight">
-                <span className="text-charcoal">Hello, </span>
-                <span className="text-sage">{firstName}</span>
-              </h1>
-              <p className="text-muted-foreground mt-2">What would you like to preserve today?</p>
-            </motion.div>
-
-            {/* Right: Quick Actions */}
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="flex flex-wrap gap-3"
-            >
-              <Link href="/dashboard/voice">
-                <motion.button
-                  whileHover={{ scale: 1.03, y: -2 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="flex items-center gap-2 px-5 py-3 bg-sage hover:bg-sage-dark text-white rounded-full font-medium shadow-lg shadow-sage/25 transition-colors"
-                >
-                  <Mic className="w-4 h-4" />
-                  Record a Message
-                </motion.button>
-              </Link>
-              <Link href="/dashboard/memories">
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="flex items-center gap-2 px-5 py-3 bg-white/80 hover:bg-white border border-sage/25 text-sage-dark rounded-full font-medium transition-all"
-                >
-                  <Heart className="w-4 h-4" />
-                  Add Memory
-                </motion.button>
-              </Link>
-            </motion.div>
-          </div>
+            {/* Bottom decorative border */}
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-sage/30 to-transparent" />
+          </motion.div>
         </div>
       </section>
 
@@ -897,8 +1474,8 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
         </div>
       </section>
 
-      {/* Wavy Divider */}
-      <WavyDivider className="-mt-4 -mb-8" />
+      {/* Botanical Divider */}
+      <BotanicalDivider variant={1} className="-mt-4 -mb-8" />
 
       {/* ══════════════════════════════════════════════════════════════════
           INSPIRATIONAL QUOTE SECTION - Dynamic Quote
@@ -1010,8 +1587,8 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
         </motion.div>
       </section>
 
-      {/* Wavy Divider */}
-      <WavyDivider flip className="-mt-6 -mb-6" />
+      {/* Botanical Divider */}
+      <BotanicalDivider variant={2} className="-mt-6 -mb-6" />
 
       {/* ══════════════════════════════════════════════════════════════════
           QUICK ACTIONS - Elegant Sage Theme
@@ -1128,8 +1705,8 @@ export function InteractiveDashboard({ userName }: DashboardProps) {
         </motion.div>
       </section>
 
-      {/* Wavy Divider */}
-      <WavyDivider className="-mt-8 -mb-4" />
+      {/* Botanical Divider */}
+      <BotanicalDivider variant={3} className="-mt-8 -mb-4" />
 
       {/* ══════════════════════════════════════════════════════════════════
           UPCOMING EVENTS SECTION - Real Data
